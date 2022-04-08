@@ -1,5 +1,8 @@
 require("dotenv").config();
 require("./config/database").connect();
+const jwt = require('jsonwebtoken');
+
+var bcrypt = require('bcryptjs');
 
 const auth = require("./middleware/auth");
 const express = require("express");
@@ -23,7 +26,7 @@ app.post("/register", async (req, res) => {
 
         // check if user already exist
         // Validate if user exist in our database
-        const oldUser = await findOne({ email });
+        const oldUser = await User.findOne({ email });
 
         if (oldUser) {
             return res.status(409).send("User Already Exist. Please Login");
@@ -33,7 +36,7 @@ app.post("/register", async (req, res) => {
         encryptedPassword = await bcrypt.hash(password, 10);
 
         // Create user in our database
-        const user = await create({
+        const user = await User.create({
             first_name,
             last_name,
             email: email.toLowerCase(), // sanitize: convert email to lowercase
@@ -45,7 +48,7 @@ app.post("/register", async (req, res) => {
             { user_id: user._id, email },
             process.env.TOKEN_KEY,
             {
-                expiresIn: "2h",
+                expiresIn: "24h",
             }
         );
         // save user token
@@ -72,7 +75,7 @@ app.post("/login", async (req, res) => {
             res.status(400).send("All input is required");
         }
         // Validate if user exist in our database
-        const user = await findOne({ email });
+        const user = await User.findOne({ email });
 
         if (user && (await bcrypt.compare(password, user.password))) {
             // Create token
@@ -88,7 +91,7 @@ app.post("/login", async (req, res) => {
             user.token = token;
 
             // user
-            res.status(200).json(user);
+            res.status(200).json(token);
         }
         res.status(400).send("Invalid Credentials");
     } catch (err) {
