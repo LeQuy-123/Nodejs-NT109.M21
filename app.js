@@ -99,12 +99,10 @@ app.post("/login", async (req, res) => {
     }
   // Our register logic ends here
 });
-app.get("/helloword", (req, res) => {
-    res.status(200).send("Welcome 🙌 ");
+app.get("/", (req, res) => {
+    res.status(200).send("Hello this is Quy's app");
 });
 
-app.post("/welcome", auth, (req, res) => {
-    res.status(200).send("Welcome 🙌 ");
-});
+
 
 module.exports = app;
