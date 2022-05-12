@@ -1,17 +1,34 @@
-import React from 'react';
-import {View, Dimensions, StyleSheet, TextInput, Text} from 'react-native';
+import React, {useState} from 'react';
+import {
+  View,
+  Dimensions,
+  StyleSheet,
+  TextInput,
+  Text,
+  TouchableOpacity,
+} from 'react-native';
 import {ErrorMessage} from 'formik';
 const windowWidth = Dimensions.get('window').width;
-
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 const FiledInputPassword = props => {
+  const [isHidePassword, setIsHidePassword] = useState(true);
   return (
     <View style={styles.container}>
       <TextInput
-        secureTextEntry={true}
+        secureTextEntry={isHidePassword}
         style={styles.inputText}
         placeholderTextColor={'#c2c2c2'}
         {...props}
       />
+      <TouchableOpacity
+        style={styles.rightIcon}
+        onPress={() => setIsHidePassword(prev => !prev)}>
+        <MaterialCommunityIcons
+          name={isHidePassword ? 'eye' : 'eye-off'}
+          size={24}
+          color="#4e8dea"
+        />
+      </TouchableOpacity>
       <ErrorMessage
         name={props.name}
         render={msg => {
@@ -51,6 +68,11 @@ const styles = StyleSheet.create({
     height: 45,
     padding: 10,
     color: 'white',
+  },
+  rightIcon: {
+    position: 'absolute',
+    right: 15,
+    top: 10,
   },
 });
 

@@ -34,10 +34,6 @@ const LoginScreen = ({route, navigation}) => {
     dispatch(login(values))
       .unwrap()
       .then(originalPromiseResult => {
-        console.log(
-          '🚀 ~ file: RegisterScreen.js ~ line 29 ~ RegisterScreen ~ originalPromiseResult',
-          originalPromiseResult,
-        );
         // handle result here
       })
       .catch(rejectedValueOrSerializedError => {

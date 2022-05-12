@@ -9,6 +9,12 @@ require("dotenv").config();
 
 app.use(cors());
 app.use(express.json());
+const {
+  addUser,
+  removeUser,
+  getUser,
+  getUsersInRoom
+} = require('./controllers/userController');
 
 mongoose
   .connect(process.env.MONGO_URL, {
@@ -51,5 +57,47 @@ io.on("connection", (socket) => {
       console.log('message recive', data);
       socket.to(sendUserSocket).emit("msg-recieve", data.msg);
     }
+  });
+
+  socket.on('join', ({ username, room }, callback) => {
+    const { error, user } = addUser({ id: socket.id, name: username, room }); // add user with socket id and room info
+    if (error) return callback(error);
+
+    socket.join(user.room);
+
+    socket.emit('message', {
+      user: 'adminX',
+      text: `${user.name.toUpperCase()}, Welcome to ${user.room} room.`
+    });
+    socket.broadcast.to(user.room).emit('message', {
+      user: 'adminX',
+      text: `${user.name.toUpperCase()} has joined!`
+    });
+
+    io.to(user.room).emit('roomData', {
+      room: user.room,
+      users: getUsersInRoom(user.room) // get user data based on user's room
+    });
+
+    callback();
+  });
+  socket.on('disconnect', () => {
+    const user = removeUser(socket.id);
+
+    if (user) {
+      io.to(user.room).emit('message', {
+        user: 'adminX',
+        text: `${user.name.toUpperCase()} has left.`
+      });
+      io.to(user.room).emit('roomData', {
+        room: user.room,
+        users: getUsersInRoom(user.room)
+      });
+    }
+  });
+  socket.on('sendMessageRoom', (message, callback) => {
+    const user = getUser(socket.id);
+    io.to(user.room).emit('message-room-recieve', { user: user.name, text: message });
+    callback();
   });
 });

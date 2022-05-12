@@ -81,7 +81,13 @@ const HomeScreen = ({route, navigation}) => {
       <View>
         <FlatList
           style={styles.list}
-          // ListHeaderComponent={headerComponent}
+          ListHeaderComponent={() => (
+            <TouchableOpacity
+              style={styles.createRoomButton}
+              onPress={() => {}}>
+              <Text style={styles.btnText}>Create chat room</Text>
+            </TouchableOpacity>
+          )}
           data={contacs}
           // stickyHeaderIndices={[0]}
           keyExtractor={(item, index) => index.toString()}
@@ -97,6 +103,20 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     backgroundColor: '#1a1a38',
+  },
+  createRoomButton: {
+    marginTop: 20,
+    marginHorizontal: 20,
+    backgroundColor: '#3737e1',
+    padding: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  btnText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   headerList: {
     width: windowWidth,
