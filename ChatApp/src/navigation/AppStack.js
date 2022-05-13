@@ -1,8 +1,7 @@
 import React from 'react';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {SCREEN_NAME} from './screen';
-import {HomeScreen, ChatScreen, LoginScreen, RegisterScreen} from '../screen';
-import {View, Text, StyleSheet} from 'react-native';
+import {HomeScreen, ChatScreen, ChatRoomScreen} from '../screen';
 
 const Stack = createNativeStackNavigator();
 
@@ -16,6 +15,12 @@ const SCREEN_LIST = [
   {
     name: SCREEN_NAME.CHAT_SCREEN,
     component: ChatScreen,
+    title: 'Chat',
+    headerShow: true,
+  },
+  {
+    name: SCREEN_NAME.CHAT_ROOM_SCREEN,
+    component: ChatRoomScreen,
     title: 'Chat',
     headerShow: true,
   },

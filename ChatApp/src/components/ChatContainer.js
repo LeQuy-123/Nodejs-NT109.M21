@@ -20,10 +20,6 @@ const ChatContainer = props => {
   const refList = useRef();
   const [arrivalMessage, setArrivalMessage] = useState(null);
   const [userIsTyping, setUserTyping] = useState(false);
-  console.log(
-    '🚀 ~ file: ChatContainer.js ~ line 23 ~ userIsTyping',
-    userIsTyping,
-  );
 
   const [messages, setMessages] = useState([]);
   const user = useSelector(state => state.authReducer.userInfo);
@@ -44,30 +40,36 @@ const ChatContainer = props => {
           rejectedValueOrSerializedError,
         );
       });
-  }, [dispatch, currentChat]);
+  }, [dispatch, currentChat, user, socket]);
 
   useEffect(() => {
     if (socket.current) {
-      socket.current.on('msg-recieve', msg => {
-        setArrivalMessage({fromSelf: false, message: msg});
-        setTimeout(() => {
-          refList?.current?.scrollToEnd();
-        }, 100);
+      socket.current.on('msg-recieve', data => {
+        if (data.from === currentChat._id) {
+          setArrivalMessage({fromSelf: false, message: data.msg});
+          setTimeout(() => {
+            refList?.current?.scrollToEnd();
+          }, 100);
+        }
       });
       socket.current.on('user_is_typing', msg => {
-        setUserTyping(true);
-        setTimeout(() => {
-          refList?.current?.scrollToEnd();
-        }, 100);
+        if (msg === currentChat._id) {
+          setUserTyping(true);
+          setTimeout(() => {
+            refList?.current?.scrollToEnd();
+          }, 100);
+        }
       });
       socket.current.on('user_stop_typing', msg => {
-        setUserTyping(false);
-        setTimeout(() => {
-          refList?.current?.scrollToEnd();
-        }, 100);
+        if (msg === currentChat._id) {
+          setUserTyping(false);
+          setTimeout(() => {
+            refList?.current?.scrollToEnd();
+          }, 100);
+        }
       });
     }
-  }, [socket]);
+  }, [socket, user, currentChat]);
   useEffect(() => {
     arrivalMessage && setMessages(prev => [...prev, arrivalMessage]);
   }, [arrivalMessage]);

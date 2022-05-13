@@ -1,5 +1,5 @@
 /* eslint-disable react-native/no-inline-styles */
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useRef} from 'react';
 import {
   FlatList,
   SafeAreaView,
@@ -8,9 +8,12 @@ import {
   Text,
   Dimensions,
   TouchableOpacity,
+  Modal,
+  TextInput,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import {useDispatch} from 'react-redux';
-import {getContacts, logout} from '../redux/thunk';
+import {createRoom, getContacts, logout} from '../redux/thunk';
 import WelcomeComponent from '../components/WelcomeComponent';
 import {SvgXml} from 'react-native-svg';
 import base64 from 'react-native-base64';
@@ -68,33 +71,82 @@ const HomeScreen = ({route, navigation}) => {
       </TouchableOpacity>
     );
   };
+  const [modalVisible, setModalVisible] = useState(false);
+  const roomName = useRef();
+
+  const handleCreateRoom = () => {
+    dispatch(createRoom({roomName: roomName.current, password: '123456'}))
+      .unwrap()
+      .then(originalPromiseResult => {
+        setModalVisible(false);
+        navigation.navigate(SCREEN_NAME.CHAT_ROOM_SCREEN, {
+          roomName: roomName.current,
+        });
+      })
+      .catch(rejectedValueOrSerializedError => {
+        console.log(
+          '🚀 ~ file: HomeScreen.js ~ line 19 ~ useEffect ~ rejectedValueOrSerializedError',
+          rejectedValueOrSerializedError,
+        );
+      });
+  };
+
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.headerList}>
-        <WelcomeComponent />
-        <TouchableOpacity
-          style={styles.logOutButton}
-          onPress={() => dispatch(logout())}>
-          <MaterialCommunityIcons name="logout" size={30} color="#fff" />
-        </TouchableOpacity>
-      </View>
-      <View>
-        <FlatList
-          style={styles.list}
-          ListHeaderComponent={() => (
-            <TouchableOpacity
-              style={styles.createRoomButton}
-              onPress={() => {}}>
-              <Text style={styles.btnText}>Create chat room</Text>
-            </TouchableOpacity>
-          )}
-          data={contacs}
-          // stickyHeaderIndices={[0]}
-          keyExtractor={(item, index) => index.toString()}
-          renderItem={renderItem}
-        />
-      </View>
-    </SafeAreaView>
+    <>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.headerList}>
+          <WelcomeComponent />
+          <TouchableOpacity
+            style={styles.logOutButton}
+            onPress={() => dispatch(logout())}>
+            <MaterialCommunityIcons name="logout" size={30} color="#fff" />
+          </TouchableOpacity>
+        </View>
+        <View>
+          <FlatList
+            style={styles.list}
+            ListHeaderComponent={() => (
+              <TouchableOpacity
+                style={styles.createRoomButton}
+                onPress={() => setModalVisible(true)}>
+                <Text style={styles.btnText}>Create chat room</Text>
+              </TouchableOpacity>
+            )}
+            data={contacs}
+            keyExtractor={(item, index) => index.toString()}
+            renderItem={renderItem}
+          />
+        </View>
+      </SafeAreaView>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        style={{margin: 0}}
+        statusBarTranslucent={true}
+        visible={modalVisible}
+        onRequestClose={() => {
+          setModalVisible(false);
+        }}>
+        <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
+          <View style={styles.centeredView}>
+            <View style={styles.modalView}>
+              <Text style={styles.modalText}>Chat room!</Text>
+              <TextInput
+                onChangeText={text => (roomName.current = text)}
+                placeholder="type your chat room name"
+                autoFocus
+                style={styles.chatRoomInput}
+              />
+              <TouchableOpacity
+                style={[styles.button, styles.buttonClose]}
+                onPress={() => handleCreateRoom()}>
+                <Text style={styles.textStyle}>Create chat room</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+    </>
   );
 };
 
@@ -159,8 +211,53 @@ const styles = StyleSheet.create({
   },
   list: {
     backgroundColor: 'rgb(8,8,16)',
+    width: windowWidth,
   },
   logOutButton: {},
+  modalView: {
+    margin: 20,
+    backgroundColor: 'white',
+    borderRadius: 20,
+    paddingTop: 15,
+    paddingBottom: 15,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  button: {
+    borderRadius: 20,
+    padding: 10,
+    elevation: 2,
+  },
+  buttonOpen: {
+    backgroundColor: '#F194FF',
+  },
+  buttonClose: {
+    backgroundColor: '#2196F3',
+  },
+  textStyle: {
+    color: 'white',
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  modalText: {
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  centeredView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 40,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+  },
+  chatRoomInput: {
+    padding: 10,
+    width: windowWidth - 120,
+    borderWidth: 1,
+    borderColor: '#2196F3',
+    borderRadius: 3,
+    marginBottom: 20,
+  },
 });
 
 export default HomeScreen;

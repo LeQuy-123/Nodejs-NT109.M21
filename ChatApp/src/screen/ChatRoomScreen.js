@@ -18,30 +18,31 @@ import {useSelector} from 'react-redux';
 import {IMAGE} from '../assets';
 
 const ChatRoomScreen = ({route, navigation}) => {
-  const {currentUser} = route.params;
+  const {roomName} = route.params;
+  console.log("🚀 ~ file: ChatRoomScreen.js ~ line 22 ~ ChatRoomScreen ~ roomName", roomName)
   const [isDoneLoadingSocket, setDoneLoadingSocket] = useState(false);
   const userInfo = useSelector(state => state.authReducer.userInfo);
   const socket = useRef();
 
-  useEffect(() => {
-    if (!socket.current) {
-      socket.current = io(host);
-      socket.current.emit('add-user', userInfo._id);
-      setTimeout(() => {
-        setDoneLoadingSocket(true);
-      }, 1000);
-    }
-    return () => {
-      if (socket.current) {
-        socket.current.removeAllListeners();
-      }
-    };
-  }, [userInfo, currentUser]);
+  // useEffect(() => {
+  //   if (!socket.current) {
+  //     socket.current = io(host);
+  //     socket.current.emit('add-user', userInfo._id);
+  //     setTimeout(() => {
+  //       setDoneLoadingSocket(true);
+  //     }, 1000);
+  //   }
+  //   return () => {
+  //     if (socket.current) {
+  //       socket.current.removeAllListeners();
+  //     }
+  //   };
+  // }, [userInfo, currentUser]);
   return (
     <>
       <SafeAreaView style={styles.container}>
         <View style={styles.headerList}>
-          <Text style={styles.name}>{currentUser?.username}</Text>
+          <Text style={styles.name}>{roomName}</Text>
           <TouchableOpacity
             style={styles.logOutButton}
             onPress={() => navigation.goBack()}>
@@ -56,11 +57,11 @@ const ChatRoomScreen = ({route, navigation}) => {
           enabled
           behavior={Platform.OS === 'ios' ? 'padding' : null}
           style={styles.container}>
-          {isDoneLoadingSocket && socket.current ? (
+          {/* {isDoneLoadingSocket && socket.current ? (
             <ChatContainer currentChat={currentUser} socket={socket} />
           ) : (
             <Image source={IMAGE.loader} style={styles.loader} />
-          )}
+          )} */}
         </KeyboardAvoidingView>
       </SafeAreaView>
     </>

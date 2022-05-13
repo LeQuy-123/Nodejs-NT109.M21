@@ -1,4 +1,6 @@
 const User = require("../models/userModel");
+const Room = require("../models/roomModel");
+
 const bcrypt = require("bcrypt");
 
 module.exports.login = async (req, res, next) => {
@@ -38,6 +40,24 @@ module.exports.register = async (req, res, next) => {
     next(ex);
   }
 };
+module.exports.findOrCreateRoom = async (req, res, next) => {
+  try {
+    const { roomName, password, hostUser } = req.body;
+    const roomNameCheck = await Room.findOne({ roomName });
+    if (roomNameCheck) return res.json({ msg: "Room name already used", status: false });
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const Room = await Room.create({
+      roomName,
+      host: hostUser,
+      password: hashedPassword,
+      user: [],
+    });
+    return res.json({ status: true, Room });
+  } catch (ex) {
+    console.log("🚀 ~ file: userController.js ~ line 57 ~ module.exports.findOrCreateRoom= ~ ex", ex)
+    next(ex);
+  }
+};
 
 module.exports.getAllUsers = async (req, res, next) => {
   try {
@@ -46,6 +66,18 @@ module.exports.getAllUsers = async (req, res, next) => {
       "username",
       "avatarImage",
       "_id",
+    ]);
+    return res.json(users);
+  } catch (ex) {
+    next(ex);
+  }
+};
+module.exports.getAllRooms = async (req, res, next) => {
+  try {
+    const users = await Room.find({ roomName: { $ne: req.params.roomName } }).select([
+      "roomName",
+      "password",
+      "user",
     ]);
     return res.json(users);
   } catch (ex) {

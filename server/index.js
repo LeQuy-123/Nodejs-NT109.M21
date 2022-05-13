@@ -2,6 +2,8 @@ const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const authRoutes = require("./routes/auth");
+const roomRoutes = require("./routes/roomChat");
+
 const messageRoutes = require("./routes/messages");
 const app = express();
 const socket = require("socket.io");
@@ -27,7 +29,7 @@ mongoose
   .catch((err) => {
     console.log(err.message);
   });
-
+app.use("/api/room", roomRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
 
@@ -42,6 +44,8 @@ const io = socket(server, {
 });
 
 global.onlineUsers = new Map();
+global.onlineRooms = new Map();
+
 io.on("connection", (socket) => {
   global.chatSocket = socket;
   socket.on("add-user", (userId) => {
@@ -51,7 +55,11 @@ io.on("connection", (socket) => {
   socket.on("send-msg", (data) => {
     const sendUserSocket = onlineUsers.get(data.to);
     if (sendUserSocket) {
-      socket.to(sendUserSocket).emit("msg-recieve", data.msg);
+      socket.to(sendUserSocket).emit("msg-recieve", {
+        from: data.from,
+        to: data.to,
+        msg: data.msg,
+      });
     }
   });
 
@@ -67,6 +75,7 @@ io.on("connection", (socket) => {
       socket.to(sendUserSocket).emit("user_stop_typing", data.from);
     }
   });
+
   socket.on("user_seen", (data) => {
     const sendUserSocket = onlineUsers.get(data.to);
     if (sendUserSocket) {
@@ -74,12 +83,17 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on('join', ({ username, room }, callback) => {
+  socket.on('join', ({userId, username, room }, callback) => {
     const { error, user } = addUser({ id: socket.id, name: username, room }); // add user with socket id and room info
     if (error) return callback(error);
+    if(onlineRooms.has(room)){
+      onlineRooms.get(room).push(username);
+    } else {
+      onlineRooms.set(room, [...onlineRooms.get(room), userId]);
+    }
+    console.log("🚀 ~ file: index.js ~ line 91 ~ socket.on ~ onlineRooms", onlineRooms)
 
     socket.join(user.room);
-
     socket.emit('message', {
       user: 'adminX',
       text: `${user.name.toUpperCase()}, Welcome to ${user.room} room.`
@@ -93,12 +107,10 @@ io.on("connection", (socket) => {
       room: user.room,
       users: getUsersInRoom(user.room) // get user data based on user's room
     });
-
     callback();
   });
   socket.on('disconnect', () => {
     const user = removeUser(socket.id);
-
     if (user) {
       io.to(user.room).emit('message', {
         user: 'adminX',
