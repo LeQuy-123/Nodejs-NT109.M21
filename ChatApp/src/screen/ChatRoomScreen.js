@@ -9,7 +9,6 @@ import {
   Dimensions,
   Text,
   Image,
-  Keyboard,
 } from 'react-native';
 import ChatContainer from '../components/ChatContainer';
 import {io} from 'socket.io-client';
@@ -18,7 +17,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import {useSelector} from 'react-redux';
 import {IMAGE} from '../assets';
 
-const ChatScreen = ({route, navigation}) => {
+const ChatRoomScreen = ({route, navigation}) => {
   const {currentUser} = route.params;
   const [isDoneLoadingSocket, setDoneLoadingSocket] = useState(false);
   const userInfo = useSelector(state => state.authReducer.userInfo);
@@ -32,37 +31,12 @@ const ChatScreen = ({route, navigation}) => {
         setDoneLoadingSocket(true);
       }, 1000);
     }
-  }, [userInfo, currentUser]);
-
-  useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener(
-      'keyboardDidShow',
-      () => {
-        if (socket.current) {
-          socket.current.emit('user_is_typing', {
-            from: userInfo._id,
-            to: currentUser._id,
-          });
-        } // or some other action
-      },
-    );
-    const keyboardDidHideListener = Keyboard.addListener(
-      'keyboardDidHide',
-      () => {
-        if (socket.current) {
-          socket.current.emit('user_stop_typing', {
-            from: userInfo._id,
-            to: currentUser._id,
-          });
-        }
-      },
-    );
-
     return () => {
-      keyboardDidHideListener.remove();
-      keyboardDidShowListener.remove();
+      if (socket.current) {
+        socket.current.removeAllListeners();
+      }
     };
-  }, [currentUser, userInfo]);
+  }, [userInfo, currentUser]);
   return (
     <>
       <SafeAreaView style={styles.container}>
@@ -135,4 +109,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ChatScreen;
+export default ChatRoomScreen;

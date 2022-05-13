@@ -45,17 +45,32 @@ global.onlineUsers = new Map();
 io.on("connection", (socket) => {
   global.chatSocket = socket;
   socket.on("add-user", (userId) => {
-    console.log('new user connected', userId);
     onlineUsers.set(userId, socket.id);
   });
 
   socket.on("send-msg", (data) => {
-    console.log('message send', data);
     const sendUserSocket = onlineUsers.get(data.to);
-    console.log("🚀 ~ file: index.js ~ line 49 ~ socket.on ~ sendUserSocket", sendUserSocket);
     if (sendUserSocket) {
-      console.log('message recive', data);
       socket.to(sendUserSocket).emit("msg-recieve", data.msg);
+    }
+  });
+
+  socket.on("user_is_typing", (data) => {
+    const sendUserSocket = onlineUsers.get(data.to);
+    if (sendUserSocket) {
+      socket.to(sendUserSocket).emit("user_is_typing", data.from);
+    }
+  });
+  socket.on("user_stop_typing", (data) => {
+    const sendUserSocket = onlineUsers.get(data.to);
+    if (sendUserSocket) {
+      socket.to(sendUserSocket).emit("user_stop_typing", data.from);
+    }
+  });
+  socket.on("user_seen", (data) => {
+    const sendUserSocket = onlineUsers.get(data.to);
+    if (sendUserSocket) {
+      socket.to(sendUserSocket).emit("user_seen", data.from);
     }
   });
 
