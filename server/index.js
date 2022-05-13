@@ -16,7 +16,7 @@ const {
   removeUser,
   getUser,
   getUsersInRoom
-} = require('./controllers/userController');
+} = require('./controllers/roomController');
 
 mongoose
   .connect(process.env.MONGO_URL, {
@@ -83,48 +83,28 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on('join', ({userId, username, room }, callback) => {
-    const { error, user } = addUser({ id: socket.id, name: username, room }); // add user with socket id and room info
-    if (error) return callback(error);
-    if(onlineRooms.has(room)){
-      onlineRooms.get(room).push(username);
-    } else {
-      onlineRooms.set(room, [...onlineRooms.get(room), userId]);
-    }
-    console.log("🚀 ~ file: index.js ~ line 91 ~ socket.on ~ onlineRooms", onlineRooms)
-
-    socket.join(user.room);
-    socket.emit('message', {
-      user: 'adminX',
-      text: `${user.name.toUpperCase()}, Welcome to ${user.room} room.`
+  socket.on('join-room', async ({user, room}) => {
+    socket.join(room);
+    socket.broadcast.to(room).emit('welcome-message', {
+      user: 'admin',
+      text: `${user.username} has joined!`
     });
-    socket.broadcast.to(user.room).emit('message', {
-      user: 'adminX',
-      text: `${user.name.toUpperCase()} has joined!`
+    const currentUserlist = await getUsersInRoom(room);
+    io.to(user._id).emit('roomData', {
+      room: room,
+      users: currentUserlist,
     });
-
-    io.to(user.room).emit('roomData', {
-      room: user.room,
-      users: getUsersInRoom(user.room) // get user data based on user's room
-    });
-    callback();
   });
-  socket.on('disconnect', () => {
-    const user = removeUser(socket.id);
-    if (user) {
-      io.to(user.room).emit('message', {
-        user: 'adminX',
-        text: `${user.name.toUpperCase()} has left.`
-      });
-      io.to(user.room).emit('roomData', {
-        room: user.room,
-        users: getUsersInRoom(user.room)
-      });
-    }
+
+
+  socket.on('user-leave', ({ user, room}) => {
+    socket.broadcast.to(room).emit('user-leave', {
+      user: 'admin',
+      text: `${user.username} has left the room!`
+    });
   });
-  socket.on('sendMessageRoom', (message, callback) => {
-    const user = getUser(socket.id);
-    io.to(user.room).emit('message-room-recieve', { user: user.name, text: message });
-    callback();
+  socket.on('send-message-room', ({ from, to, msg }) => {
+    console.log("🚀 ~ file: index.js ~ line 109 ~ socket.on ~  from, to, msg", from, to, msg)
+    io.to(to).emit('message-room-recieve', { from, to, msg });
   });
 });

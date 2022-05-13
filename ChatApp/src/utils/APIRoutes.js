@@ -8,3 +8,4 @@ export const recieveMessageRoute = `${host}/api/messages/getmsg`;
 export const setAvatarRoute = `${host}/api/auth/setavatar`;
 
 export const createRoomRoute = `${host}/api/room/createRoom`;
+export const leaveRoute = `${host}/api/room/leaveRoom`;

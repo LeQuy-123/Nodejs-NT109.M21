@@ -10,42 +10,62 @@ import {
   Text,
   Image,
 } from 'react-native';
-import ChatContainer from '../components/ChatContainer';
+import ChatRoomContainer from '../components/ChatRoomContainer';
 import {io} from 'socket.io-client';
 import {host} from '../utils/APIRoutes';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import {useSelector} from 'react-redux';
+import {useDispatch, useSelector} from 'react-redux';
 import {IMAGE} from '../assets';
+import {leaveRoom} from '../redux/thunk';
+import {Root} from 'react-native-popup-confirm-toast';
 
 const ChatRoomScreen = ({route, navigation}) => {
   const {roomName} = route.params;
-  console.log("🚀 ~ file: ChatRoomScreen.js ~ line 22 ~ ChatRoomScreen ~ roomName", roomName)
   const [isDoneLoadingSocket, setDoneLoadingSocket] = useState(false);
   const userInfo = useSelector(state => state.authReducer.userInfo);
   const socket = useRef();
 
-  // useEffect(() => {
-  //   if (!socket.current) {
-  //     socket.current = io(host);
-  //     socket.current.emit('add-user', userInfo._id);
-  //     setTimeout(() => {
-  //       setDoneLoadingSocket(true);
-  //     }, 1000);
-  //   }
-  //   return () => {
-  //     if (socket.current) {
-  //       socket.current.removeAllListeners();
-  //     }
-  //   };
-  // }, [userInfo, currentUser]);
+  useEffect(() => {
+    if (!socket.current) {
+      socket.current = io(host);
+      socket.current.emit('join-room', {
+        user: userInfo,
+        room: roomName,
+      });
+      setTimeout(() => {
+        setDoneLoadingSocket(true);
+      }, 1000);
+    }
+    return () => {
+      if (socket.current) {
+        socket.current.removeAllListeners();
+      }
+    };
+  }, [roomName, userInfo]);
+  const dipatch = useDispatch();
+  const onLeave = () => {
+    dipatch(leaveRoom(roomName))
+      .unwrap()
+      .then(originalPromiseResult => {
+        navigation.goBack();
+        socket.current.emit('user-leave', {
+          user: userInfo,
+          room: roomName,
+        });
+      })
+      .catch(rejectedValueOrSerializedError => {
+        console.log(
+          '🚀 ~ file: HomeScreen.js ~ line 19 ~ useEffect ~ rejectedValueOrSerializedError',
+          rejectedValueOrSerializedError,
+        );
+      });
+  };
   return (
-    <>
+    <Root>
       <SafeAreaView style={styles.container}>
         <View style={styles.headerList}>
           <Text style={styles.name}>{roomName}</Text>
-          <TouchableOpacity
-            style={styles.logOutButton}
-            onPress={() => navigation.goBack()}>
+          <TouchableOpacity style={styles.logOutButton} onPress={onLeave}>
             <MaterialCommunityIcons
               name="backspace-reverse"
               size={30}
@@ -57,14 +77,18 @@ const ChatRoomScreen = ({route, navigation}) => {
           enabled
           behavior={Platform.OS === 'ios' ? 'padding' : null}
           style={styles.container}>
-          {/* {isDoneLoadingSocket && socket.current ? (
-            <ChatContainer currentChat={currentUser} socket={socket} />
+          {isDoneLoadingSocket && socket.current ? (
+            <ChatRoomContainer
+              roomName={roomName}
+              currentChat={{}}
+              socket={socket}
+            />
           ) : (
             <Image source={IMAGE.loader} style={styles.loader} />
-          )} */}
+          )}
         </KeyboardAvoidingView>
       </SafeAreaView>
-    </>
+    </Root>
   );
 };
 
