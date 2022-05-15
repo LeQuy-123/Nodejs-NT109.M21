@@ -4,11 +4,12 @@ import React, {useEffect, useRef, useState} from 'react';
 import {View, StyleSheet, Dimensions, FlatList, Text} from 'react-native';
 import {useSelector, useDispatch} from 'react-redux';
 import ChatInput from './ChatInput';
-import {sendMessageRoute} from '../utils/APIRoutes';
+import {addRoomMessageRoute} from '../utils/APIRoutes';
 import {SvgXml} from 'react-native-svg';
 import base64 from 'react-native-base64';
 const windowWidth = Dimensions.get('window').width;
 import {Toast} from 'react-native-popup-confirm-toast';
+import {getAllRoomMsg} from '../redux/thunk';
 
 const getBasse64SvgImg = icon => {
   let finalbase64String = '';
@@ -19,9 +20,6 @@ const ChatRoomContainer = props => {
   const {socket, currentChat, roomName} = props;
   const refList = useRef();
   const [arrivalMessage, setArrivalMessage] = useState(null);
-  console.log("🚀 ~ file: ChatRoomContainer.js ~ line 22 ~ arrivalMessage", arrivalMessage)
-  const [userIsTyping, setUserTyping] = useState(false);
-
   const [messages, setMessages] = useState([]);
   const user = useSelector(state => state.authReducer.userInfo);
   const dispatch = useDispatch();
@@ -48,8 +46,8 @@ const ChatRoomContainer = props => {
           position: 'top',
         });
       });
-      socket.current.on('message-room-recieve', data => {
-        setArrivalMessage({fromSelf: false, message: data.msg});
+      socket.current.on('message-room-recieve', ({from, to, msg}) => {
+        setArrivalMessage({fromSelf: false, message: msg, from, to});
         setTimeout(() => {
           refList?.current?.scrollToEnd();
         }, 100);
@@ -59,19 +57,45 @@ const ChatRoomContainer = props => {
   useEffect(() => {
     arrivalMessage && setMessages(prev => [...prev, arrivalMessage]);
   }, [arrivalMessage]);
+
+  useEffect(() => {
+    dispatch(getAllRoomMsg(roomName))
+      .unwrap()
+      .then(originalPromiseResult => {
+        setMessages(originalPromiseResult);
+        setTimeout(() => {
+          refList?.current?.scrollToEnd();
+        }, 500);
+      })
+      .catch(rejectedValueOrSerializedError => {
+        console.log(
+          '🚀 ~ file: HomeScreen.js ~ line 19 ~ useEffect ~ rejectedValueOrSerializedError',
+          rejectedValueOrSerializedError,
+        );
+      });
+  }, [dispatch, roomName, currentChat]);
   const handleSendMsg = async msg => {
     socket.current.emit('send-message-room', {
       to: roomName,
-      from: user._id,
+      from: user,
       msg,
     });
-    await axios.post(sendMessageRoute, {
-      from: user._id,
+    const userData = user;
+    delete userData.password;
+    delete userData.isAvatarImageSet;
+    delete userData.email;
+    await axios.post(addRoomMessageRoute, {
+      from: userData,
       to: roomName,
       message: msg,
     });
     const msgs = [...messages];
-    msgs.push({fromSelf: true, message: msg});
+    msgs.push({
+      fromSelf: true,
+      message: msg,
+      to: roomName,
+      from: user,
+    });
     setMessages(msgs);
     setTimeout(() => {
       refList?.current?.scrollToEnd();
@@ -79,16 +103,10 @@ const ChatRoomContainer = props => {
   };
 
   const renderAvatar = (item, index) => {
-    if (
-      messages[index + 1] &&
-      messages[index].fromSelf === messages[index + 1].fromSelf
-    ) {
-      return <View style={styles.avaFake} />;
-    }
-    if (currentChat.avatarImage && !item?.fromSelf) {
+    if (item?.from.avatarImage && !item?.fromSelf) {
       return (
         <SvgXml
-          xml={getBasse64SvgImg(currentChat.avatarImage)}
+          xml={getBasse64SvgImg(item?.from.avatarImage)}
           width={50}
           height={50}
         />
@@ -127,37 +145,7 @@ const ChatRoomContainer = props => {
 
   return (
     <View style={styles.container}>
-      <FlatList
-        ref={refList}
-        data={messages}
-        renderItem={renderItem}
-        ListFooterComponent={() => {
-          if (!userIsTyping) {
-            return null;
-          }
-          return (
-            <View
-              style={{
-                ...styles.chatContainer,
-                flexDirection: 'row',
-              }}>
-              <SvgXml
-                xml={getBasse64SvgImg(currentChat.avatarImage)}
-                width={50}
-                height={50}
-              />
-              <Text
-                style={{
-                  ...styles.boubleText,
-                  marginHorizontal: 10,
-                  color: '#ffffff80',
-                }}>
-                {currentChat.username} is typing...
-              </Text>
-            </View>
-          );
-        }}
-      />
+      <FlatList ref={refList} data={messages} renderItem={renderItem} />
       <ChatInput handleSendMsg={handleSendMsg} />
     </View>
   );

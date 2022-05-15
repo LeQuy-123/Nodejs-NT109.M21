@@ -16,12 +16,15 @@ import {host} from '../utils/APIRoutes';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useDispatch, useSelector} from 'react-redux';
 import {IMAGE} from '../assets';
-import {leaveRoom} from '../redux/thunk';
+import {getRoomUsers, leaveRoom} from '../redux/thunk';
 import {Root} from 'react-native-popup-confirm-toast';
+import UserList from '../components/UserList';
 
 const ChatRoomScreen = ({route, navigation}) => {
   const {roomName} = route.params;
   const [isDoneLoadingSocket, setDoneLoadingSocket] = useState(false);
+  const [userList, setUserList] = useState([]);
+
   const userInfo = useSelector(state => state.authReducer.userInfo);
   const socket = useRef();
 
@@ -60,6 +63,20 @@ const ChatRoomScreen = ({route, navigation}) => {
         );
       });
   };
+
+  useEffect(() => {
+    dipatch(getRoomUsers(roomName))
+      .unwrap()
+      .then(originalPromiseResult => {
+        setUserList(originalPromiseResult.users);
+      })
+      .catch(rejectedValueOrSerializedError => {
+        console.log(
+          '🚀 ~ file: HomeScreen.js ~ line 19 ~ useEffect ~ rejectedValueOrSerializedError',
+          rejectedValueOrSerializedError,
+        );
+      });
+  }, [dipatch, roomName]);
   return (
     <Root>
       <SafeAreaView style={styles.container}>
@@ -73,6 +90,7 @@ const ChatRoomScreen = ({route, navigation}) => {
             />
           </TouchableOpacity>
         </View>
+        <UserList socket={socket} roomName={roomName} />
         <KeyboardAvoidingView
           enabled
           behavior={Platform.OS === 'ios' ? 'padding' : null}

@@ -9,3 +9,6 @@ export const setAvatarRoute = `${host}/api/auth/setavatar`;
 
 export const createRoomRoute = `${host}/api/room/createRoom`;
 export const leaveRoute = `${host}/api/room/leaveRoom`;
+export const addRoomMessageRoute = `${host}/api/room/addmsg`;
+export const getAllRoomMessageRoute = `${host}/api/room/getmsg`;
+export const getRoomUsersRoute = `${host}/api/room/getAllUserInRoom`;

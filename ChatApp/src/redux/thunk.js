@@ -8,6 +8,8 @@ import {
   registerRoute,
   createRoomRoute,
   leaveRoute,
+  getAllRoomMessageRoute,
+  getRoomUsersRoute,
 } from '../utils/APIRoutes';
 import {store} from '../redux/store';
 export function logout() {
@@ -112,7 +114,6 @@ const leaveRoom = createAsyncThunk(
       roomName: roomName,
       hostUser: id,
     });
-    console.log('🚀 ~ file: thunk.js ~ line 99 ~ response', response);
     if (response.status !== 200) {
       return thunkAPI.rejectWithValue({error: 'Server error'});
     }
@@ -121,4 +122,44 @@ const leaveRoom = createAsyncThunk(
     }
   },
 );
-export {leaveRoom, createRoom, login, register, getContacts, getChatList};
+const getAllRoomMsg = createAsyncThunk(
+  'users/getAllRoomMsg',
+  async (roomName, thunkAPI) => {
+    const id = store.getState().authReducer.userInfo?._id;
+    const response = await axios.post(getAllRoomMessageRoute, {
+      roomName,
+      userId: id,
+    });
+    if (response.status !== 200) {
+      return thunkAPI.rejectWithValue({error: 'Server error'});
+    }
+    if (response.status === 200) {
+      return thunkAPI.fulfillWithValue(response.data);
+    }
+  },
+);
+
+const getRoomUsers = createAsyncThunk(
+  'users/getUsersRoom',
+  async (roomName, thunkAPI) => {
+    const response = await axios.post(getRoomUsersRoute, {
+      roomName,
+    });
+    if (response.status !== 200) {
+      return thunkAPI.rejectWithValue({error: 'Server error'});
+    }
+    if (response.status === 200) {
+      return thunkAPI.fulfillWithValue(response.data);
+    }
+  },
+);
+export {
+  getAllRoomMsg,
+  leaveRoom,
+  createRoom,
+  login,
+  register,
+  getContacts,
+  getChatList,
+  getRoomUsers,
+};

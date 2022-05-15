@@ -12,11 +12,9 @@ require("dotenv").config();
 app.use(cors());
 app.use(express.json());
 const {
-  addUser,
-  removeUser,
-  getUser,
   getUsersInRoom
 } = require('./controllers/roomController');
+const { getMessages } = require("./controllers/messageController");
 
 mongoose
   .connect(process.env.MONGO_URL, {
@@ -87,24 +85,21 @@ io.on("connection", (socket) => {
     socket.join(room);
     socket.broadcast.to(room).emit('welcome-message', {
       user: 'admin',
-      text: `${user.username} has joined!`
-    });
-    const currentUserlist = await getUsersInRoom(room);
-    io.to(user._id).emit('roomData', {
-      room: room,
-      users: currentUserlist,
+      text: `${user.username} has joined!`,
+      userJoin: user,
+
     });
   });
 
 
-  socket.on('user-leave', ({ user, room}) => {
+  socket.on('user-leave', async ({ user, room}) => {
     socket.broadcast.to(room).emit('user-leave', {
       user: 'admin',
-      text: `${user.username} has left the room!`
+      text: `${user.username} has left the room!`,
+      userLeft: user,
     });
   });
   socket.on('send-message-room', ({ from, to, msg }) => {
-    console.log("🚀 ~ file: index.js ~ line 109 ~ socket.on ~  from, to, msg", from, to, msg)
     io.to(to).emit('message-room-recieve', { from, to, msg });
   });
 });
