@@ -5,6 +5,7 @@ const {
   getAllRoomMessages,
   addRoomMessage,
   getUsersInRoomAPI,
+  getRoomHaveUser,
 } = require("../controllers/roomController");
 
 const router = require("express").Router();
@@ -18,5 +19,6 @@ router.post("/leaveRoom", leaveRoom);
 router.post("/addmsg", addRoomMessage);
 router.post("/getmsg", getAllRoomMessages);
 router.post("/getAllUserInRoom", getUsersInRoomAPI);
+router.post("/getRoomHaveUser", getRoomHaveUser);
 
 module.exports = router;

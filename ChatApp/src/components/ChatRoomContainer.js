@@ -4,12 +4,13 @@ import React, {useEffect, useRef, useState} from 'react';
 import {View, StyleSheet, Dimensions, FlatList, Text} from 'react-native';
 import {useSelector, useDispatch} from 'react-redux';
 import ChatInput from './ChatInput';
-import {addRoomMessageRoute} from '../utils/APIRoutes';
+import {addRoomMessageRoute, getAllRoomMessageRoute} from '../utils/APIRoutes';
 import {SvgXml} from 'react-native-svg';
 import base64 from 'react-native-base64';
 const windowWidth = Dimensions.get('window').width;
 import {Toast} from 'react-native-popup-confirm-toast';
 import {getAllRoomMsg} from '../redux/thunk';
+import {store} from '../redux/store';
 
 const getBasse64SvgImg = icon => {
   let finalbase64String = '';
@@ -22,8 +23,6 @@ const ChatRoomContainer = props => {
   const [arrivalMessage, setArrivalMessage] = useState(null);
   const [messages, setMessages] = useState([]);
   const user = useSelector(state => state.authReducer.userInfo);
-  const dispatch = useDispatch();
-
   useEffect(() => {
     if (socket.current) {
       socket.current.on('welcome-message', data => {
@@ -59,21 +58,21 @@ const ChatRoomContainer = props => {
   }, [arrivalMessage]);
 
   useEffect(() => {
-    dispatch(getAllRoomMsg(roomName))
-      .unwrap()
-      .then(originalPromiseResult => {
-        setMessages(originalPromiseResult);
+    const fetchData = async () => {
+      try {
+        const id = store.getState().authReducer.userInfo?._id;
+        const response = await axios.post(getAllRoomMessageRoute, {
+          roomName,
+          userId: id,
+        });
+        setMessages(response.data);
         setTimeout(() => {
           refList?.current?.scrollToEnd();
         }, 500);
-      })
-      .catch(rejectedValueOrSerializedError => {
-        console.log(
-          '🚀 ~ file: HomeScreen.js ~ line 19 ~ useEffect ~ rejectedValueOrSerializedError',
-          rejectedValueOrSerializedError,
-        );
-      });
-  }, [dispatch, roomName, currentChat]);
+      } catch (error) {}
+    };
+    fetchData();
+  }, [roomName]);
   const handleSendMsg = async msg => {
     socket.current.emit('send-message-room', {
       to: roomName,

@@ -10,6 +10,7 @@ import {
   leaveRoute,
   getAllRoomMessageRoute,
   getRoomUsersRoute,
+  getRoomHaveUserRoute,
 } from '../utils/APIRoutes';
 import {store} from '../redux/store';
 export function logout() {
@@ -44,7 +45,6 @@ const register = createAsyncThunk(
       email: value?.email,
       password: value?.password,
     });
-    console.log('🚀 ~ file: thunk.js ~ line 38 ~ response', response);
     if (response.status !== 200) {
       return thunkAPI.rejectWithValue({error: 'Server error'});
     }
@@ -71,7 +71,21 @@ const getContacts = createAsyncThunk(
     }
   },
 );
-
+const getRoomHaveUser = createAsyncThunk(
+  'users/getContacts',
+  async (value, thunkAPI) => {
+    const id = store.getState().authReducer.userInfo?._id;
+    const response = await axios.post(getRoomHaveUserRoute, {
+      id,
+    });
+    if (response.status !== 200) {
+      return thunkAPI.rejectWithValue({error: 'Server error'});
+    }
+    if (response.status === 200) {
+      return thunkAPI.fulfillWithValue(response.data);
+    }
+  },
+);
 const getChatList = createAsyncThunk(
   'users/getContacts',
   async (userId, thunkAPI) => {
@@ -162,4 +176,5 @@ export {
   getContacts,
   getChatList,
   getRoomUsers,
+  getRoomHaveUser,
 };

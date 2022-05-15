@@ -11,15 +11,20 @@ import {
   Modal,
   TextInput,
   TouchableWithoutFeedback,
+  RefreshControl,
 } from 'react-native';
 import {useDispatch} from 'react-redux';
-import {createRoom, getContacts, logout} from '../redux/thunk';
+import {createRoom, getContacts, getRoomHaveUser, logout} from '../redux/thunk';
 import WelcomeComponent from '../components/WelcomeComponent';
 import {SvgXml} from 'react-native-svg';
 import base64 from 'react-native-base64';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import {useFocusEffect} from '@react-navigation/native';
+import axios from 'axios';
+import {store} from '../redux/store';
 
 import {SCREEN_NAME} from '../navigation/screen';
+import {getRoomHaveUserRoute, allUsersRoute} from '../utils/APIRoutes';
 const windowWidth = Dimensions.get('window').width;
 
 const getBasse64SvgImg = icon => {
@@ -30,26 +35,53 @@ const getBasse64SvgImg = icon => {
 const HomeScreen = ({route, navigation}) => {
   const dispatch = useDispatch();
   const [contacs, setContacs] = useState([]);
-  useEffect(() => {
-    dispatch(getContacts())
-      .unwrap()
-      .then(originalPromiseResult => {
-        setContacs(originalPromiseResult);
-      })
-      .catch(rejectedValueOrSerializedError => {
-        console.log(
-          '🚀 ~ file: HomeScreen.js ~ line 19 ~ useEffect ~ rejectedValueOrSerializedError',
-          rejectedValueOrSerializedError,
-        );
-      });
-  }, [dispatch]);
+  useFocusEffect(
+    React.useCallback(() => {
+      async function fetchData() {
+        try {
+          const id = store.getState().authReducer.userInfo?._id;
+          const cont = await axios.get(`${allUsersRoute}/${id}`);
+          const room = await axios.post(getRoomHaveUserRoute, {id});
+          setContacs([...room.data, ...cont.data]);
+        } catch (error) {
+          console.log(
+            '🚀 ~ file: HomeScreen.js ~ line 40 ~ fetchData ~ error',
+            error,
+          );
+        }
+      }
+      fetchData();
+    }, []),
+  );
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      const cont = await dispatch(getContacts()).unwrap();
+      const room = await dispatch(getRoomHaveUser()).unwrap();
+      setContacs([...room, ...cont]);
+      setRefreshing(false);
+    } catch (error) {
+      setRefreshing(false);
+      console.log(
+        '🚀 ~ file: HomeScreen.js ~ line 40 ~ fetchData ~ error',
+        error,
+      );
+    }
+  };
   const renderItem = ({item}) => {
     return (
       <TouchableOpacity
         style={styles.item}
-        onPress={() =>
-          navigation.navigate(SCREEN_NAME.CHAT_SCREEN, {currentUser: item})
-        }>
+        onPress={() => {
+          if (item?.roomName) {
+            navigation.navigate(SCREEN_NAME.CHAT_ROOM_SCREEN, {
+              roomName: item?.roomName,
+            });
+          } else {
+            navigation.navigate(SCREEN_NAME.CHAT_SCREEN, {currentUser: item});
+          }
+        }}>
         {item.avatarImage ? (
           <SvgXml
             xml={getBasse64SvgImg(item.avatarImage)}
@@ -61,9 +93,9 @@ const HomeScreen = ({route, navigation}) => {
             <Text style={styles.nameAva}>{item.username?.split('')[0]}</Text>
           </View>
         )}
-        <Text style={styles.textItem}>{item.username}</Text>
+        <Text style={styles.textItem}>{item.username || item.roomName}</Text>
         <MaterialCommunityIcons
-          name="chat"
+          name={item.roomName ? 'wechat' : 'chat'}
           size={20}
           color="#fff"
           style={{position: 'absolute', right: 10}}
@@ -90,6 +122,7 @@ const HomeScreen = ({route, navigation}) => {
         );
       });
   };
+  const [refreshing, setRefreshing] = React.useState(false);
 
   return (
     <>
@@ -104,6 +137,13 @@ const HomeScreen = ({route, navigation}) => {
         </View>
         <View>
           <FlatList
+            refreshControl={
+              <RefreshControl
+                colors="white"
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+              />
+            }
             style={styles.list}
             ListHeaderComponent={() => (
               <TouchableOpacity

@@ -42,19 +42,28 @@ module.exports.addRoomMessage = async (req, res, next) => {
   }
 };
 
+module.exports.getRoomData = async (roomname) => {
+  try {
+    const roomNameCheck = await Room.findOne({ roomname });
+    return roomNameCheck;
+  } catch (ex) {
+    console.log("🚀 ~ file: roomController.js ~ line 50 ~ module.exports.getRoomData= ~ ex", ex)
+  }
+};
+
 module.exports.findOrCreateRoom = async (req, res, next) => {
   try {
     const { roomName, password, hostUser } = req.body;
     const roomNameCheck = await Room.findOne({ roomName });
     if (roomNameCheck != null) {
-      const checkUserExist = roomNameCheck?.user.indexOf(user => user === hostUser);
-      if(checkUserExist !== -1) {
+      const checkUserExist = roomNameCheck?.user.includes(hostUser);
+      if(checkUserExist) {
         return res.json({ status: true, roomNameCheck });
       } else {
         const editRoom = await Room.findOneAndUpdate(
           roomName,
           {
-            user: checkUserExist != -1 ? roomNameCheck.user : roomNameCheck.user.concat(hostUser),
+            user: roomNameCheck.user.concat(hostUser),
           },
           { new: true }
         );
@@ -121,22 +130,6 @@ module.exports.leaveRoom = async (req, res, next) => {
     next(ex);
   }
 };
-//Array of users
-const users = [];
-
-module.exports.addUser = ({ userId, userName, roomName }) => {
-
-
-  return {  };
-};
-
-module.exports.removeUser = id => {
-  const index = users.findIndex(user => user.id === id);
-
-  if (index !== -1) return users.splice(index, 1)[0];
-};
-
-module.exports.getUser = id => users.find(user => user.id === id);
 
 module.exports.getUsersInRoom = async roomName => {
   try {
@@ -173,6 +166,17 @@ module.exports.getUsersInRoomAPI = async (req, res, next) => {
       "_id",
     ]);
     return res.json(userList);
+  } catch (ex) {
+    next(ex);
+  }
+};
+
+
+module.exports.getRoomHaveUser = async (req, res, next) => {
+  try {
+    const { id } = req.body;
+    const roomList = await Room.find({ user: id });
+    return res.json(roomList);
   } catch (ex) {
     next(ex);
   }

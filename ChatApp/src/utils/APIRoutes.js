@@ -12,3 +12,4 @@ export const leaveRoute = `${host}/api/room/leaveRoom`;
 export const addRoomMessageRoute = `${host}/api/room/addmsg`;
 export const getAllRoomMessageRoute = `${host}/api/room/getmsg`;
 export const getRoomUsersRoute = `${host}/api/room/getAllUserInRoom`;
+export const getRoomHaveUserRoute = `${host}/api/room/getRoomHaveUser`;

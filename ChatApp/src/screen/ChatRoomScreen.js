@@ -16,14 +16,13 @@ import {host} from '../utils/APIRoutes';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useDispatch, useSelector} from 'react-redux';
 import {IMAGE} from '../assets';
-import {getRoomUsers, leaveRoom} from '../redux/thunk';
-import {Root} from 'react-native-popup-confirm-toast';
+import {leaveRoom} from '../redux/thunk';
+import {Root, Popup} from 'react-native-popup-confirm-toast';
 import UserList from '../components/UserList';
 
 const ChatRoomScreen = ({route, navigation}) => {
   const {roomName} = route.params;
   const [isDoneLoadingSocket, setDoneLoadingSocket] = useState(false);
-  const [userList, setUserList] = useState([]);
 
   const userInfo = useSelector(state => state.authReducer.userInfo);
   const socket = useRef();
@@ -41,42 +40,44 @@ const ChatRoomScreen = ({route, navigation}) => {
     }
     return () => {
       if (socket.current) {
+        socket.current.emit('user-leave', {
+          user: userInfo,
+          room: roomName,
+        });
         socket.current.removeAllListeners();
       }
     };
   }, [roomName, userInfo]);
   const dipatch = useDispatch();
-  const onLeave = () => {
-    dipatch(leaveRoom(roomName))
-      .unwrap()
-      .then(originalPromiseResult => {
-        navigation.goBack();
-        socket.current.emit('user-leave', {
-          user: userInfo,
-          room: roomName,
-        });
-      })
-      .catch(rejectedValueOrSerializedError => {
-        console.log(
-          '🚀 ~ file: HomeScreen.js ~ line 19 ~ useEffect ~ rejectedValueOrSerializedError',
-          rejectedValueOrSerializedError,
-        );
-      });
-  };
 
-  useEffect(() => {
-    dipatch(getRoomUsers(roomName))
-      .unwrap()
-      .then(originalPromiseResult => {
-        setUserList(originalPromiseResult.users);
-      })
-      .catch(rejectedValueOrSerializedError => {
-        console.log(
-          '🚀 ~ file: HomeScreen.js ~ line 19 ~ useEffect ~ rejectedValueOrSerializedError',
-          rejectedValueOrSerializedError,
-        );
-      });
-  }, [dipatch, roomName]);
+  const onLeave = () => {
+    const popup = Popup;
+    popup.show({
+      type: 'confirm',
+      textBody:
+        'Leave this room? You will be removed from the room and all messages will be deleted when all user left the room.',
+      buttonText: 'I will be back later',
+      confirmText: 'Leave Room',
+      callback: () => {
+        navigation.goBack();
+        Popup.hide();
+      },
+      cancelCallback: () => {
+        dipatch(leaveRoom(roomName))
+          .unwrap()
+          .then(originalPromiseResult => {
+            Popup.hide();
+            navigation.goBack();
+          })
+          .catch(rejectedValueOrSerializedError => {
+            console.log(
+              '🚀 ~ file: HomeScreen.js ~ line 19 ~ useEffect ~ rejectedValueOrSerializedError',
+              rejectedValueOrSerializedError,
+            );
+          });
+      },
+    });
+  };
   return (
     <Root>
       <SafeAreaView style={styles.container}>

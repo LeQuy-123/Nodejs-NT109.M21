@@ -1,33 +1,35 @@
 import React, {useEffect, useState} from 'react';
 import {View, Dimensions, Text, StyleSheet, FlatList} from 'react-native';
-import {useDispatch} from 'react-redux';
-import {getRoomUsers} from '../redux/thunk';
+import {getRoomUsersRoute} from '../utils/APIRoutes';
 import {getBasse64SvgImg} from '../utils/utils';
+import axios from 'axios';
 
 const UserList = props => {
   const {roomName, socket} = props;
   const [userList, setUserList] = useState([]);
 
-  const dipatch = useDispatch();
-
   useEffect(() => {
-    dipatch(getRoomUsers(roomName))
-      .unwrap()
-      .then(originalPromiseResult => {
-        setUserList(originalPromiseResult);
-      })
-      .catch(rejectedValueOrSerializedError => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.post(getRoomUsersRoute, {roomName});
+        setUserList(response.data);
+      } catch (error) {
         console.log(
-          '🚀 ~ file: HomeScreen.js ~ line 19 ~ useEffect ~ rejectedValueOrSerializedError',
-          rejectedValueOrSerializedError,
+          '🚀 ~ file: UserList.js ~ line 21 ~ fetchData ~ error',
+          error,
         );
-      });
-  }, [dipatch, roomName]);
+      }
+    };
+    fetchData();
+  }, [roomName]);
   useEffect(() => {
     if (socket.current) {
       socket.current.on('welcome-message', data => {
-        const newList = [...userList, data.userJoin];
-        setUserList(newList);
+        const check = userList.some(ch => ch._id === data?.userJoin?._id);
+        if (!check) {
+          const newList = [...userList, data.userJoin];
+          setUserList(newList);
+        }
       });
       socket.current.on('user-leave', data => {
         const newList = userList.filter(user => user._id !== data.userLeft._id);
@@ -59,9 +61,9 @@ const windowWidth = Dimensions.get('window').width;
 const styles = StyleSheet.create({
   container: {
     width: windowWidth,
-    marginTop: 5,
   },
   inside: {
+    paddingTop: 5,
     paddingHorizontal: 20,
   },
   name: {

@@ -11,10 +11,9 @@ require("dotenv").config();
 
 app.use(cors());
 app.use(express.json());
-const {
-  getUsersInRoom
-} = require('./controllers/roomController');
+
 const { getMessages } = require("./controllers/messageController");
+const { getRoomData } = require("./controllers/roomController");
 
 mongoose
   .connect(process.env.MONGO_URL, {
@@ -42,7 +41,6 @@ const io = socket(server, {
 });
 
 global.onlineUsers = new Map();
-global.onlineRooms = new Map();
 
 io.on("connection", (socket) => {
   global.chatSocket = socket;
@@ -87,12 +85,12 @@ io.on("connection", (socket) => {
       user: 'admin',
       text: `${user.username} has joined!`,
       userJoin: user,
-
     });
   });
 
 
   socket.on('user-leave', async ({ user, room}) => {
+    socket.leave(room);
     socket.broadcast.to(room).emit('user-leave', {
       user: 'admin',
       text: `${user.username} has left the room!`,
