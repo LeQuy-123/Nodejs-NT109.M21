@@ -48,8 +48,18 @@ const ChatRoomScreen = ({route, navigation}) => {
       }
     };
   }, [roomName, userInfo]);
-  const dipatch = useDispatch();
-
+  const leaveRoomRequest = async () => {
+    try {
+      await leaveRoom(roomName);
+      Popup.hide();
+      navigation.goBack();
+    } catch (error) {
+      console.log(
+        '🚀 ~ file: ChatRoomScreen.js ~ line 58 ~ leaveRoom ~ error',
+        error,
+      );
+    }
+  };
   const onLeave = () => {
     const popup = Popup;
     popup.show({
@@ -62,20 +72,7 @@ const ChatRoomScreen = ({route, navigation}) => {
         navigation.goBack();
         Popup.hide();
       },
-      cancelCallback: () => {
-        dipatch(leaveRoom(roomName))
-          .unwrap()
-          .then(originalPromiseResult => {
-            Popup.hide();
-            navigation.goBack();
-          })
-          .catch(rejectedValueOrSerializedError => {
-            console.log(
-              '🚀 ~ file: HomeScreen.js ~ line 19 ~ useEffect ~ rejectedValueOrSerializedError',
-              rejectedValueOrSerializedError,
-            );
-          });
-      },
+      cancelCallback: () => leaveRoomRequest(),
     });
   };
   return (

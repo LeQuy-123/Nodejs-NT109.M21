@@ -170,7 +170,6 @@ const HomeScreen = ({route, navigation}) => {
               <TextInput
                 onChangeText={text => (roomName.current = text)}
                 placeholder="type your chat room name"
-                autoFocus
                 style={styles.chatRoomInput}
               />
               <TouchableOpacity

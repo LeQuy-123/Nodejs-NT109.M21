@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {
   View,
   SafeAreaView,
@@ -10,6 +10,7 @@ import {
   Text,
   TouchableWithoutFeedback,
   Keyboard,
+  ActivityIndicator,
 } from 'react-native';
 import LogoComponent from '../components/LogoComponent';
 import {Formik} from 'formik';
@@ -29,14 +30,17 @@ const SignupSchema = Yup.object().shape({
 });
 
 const LoginScreen = ({route, navigation}) => {
+  const [isLoading, setLoading] = useState(false);
   const dispatch = useDispatch();
   const submit = values => {
+    setLoading(true);
     dispatch(login(values))
       .unwrap()
       .then(originalPromiseResult => {
-        // handle result here
+        // setLoading(false);
       })
       .catch(rejectedValueOrSerializedError => {
+        setLoading(false);
         Toast.show({
           backgroundColor: '#4e0eff',
           title: rejectedValueOrSerializedError?.error,
@@ -81,7 +85,11 @@ const LoginScreen = ({route, navigation}) => {
                     <TouchableOpacity
                       onPress={handleSubmit}
                       style={styles.button}>
-                      <Text style={styles.textButton}>LOG IN</Text>
+                      {isLoading ? (
+                        <ActivityIndicator color="white" size="small" />
+                      ) : (
+                        <Text style={styles.textButton}>LOG IN</Text>
+                      )}
                     </TouchableOpacity>
                     <View style={styles.row}>
                       <Text style={styles.textNavigate}>

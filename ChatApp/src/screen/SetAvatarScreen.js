@@ -8,6 +8,7 @@ import {
   Text,
   TouchableOpacity,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 const windowWidth = Dimensions.get('window').width;
 import {useDispatch} from 'react-redux';
@@ -29,19 +30,25 @@ const SetAvatarScreen = ({route, navigation}) => {
   const [avatars, setAvatars] = useState([]);
   const [pick, setPicker] = useState('');
   const [isLoading, setLoading] = useState(true);
+  const [isLoadingAvaSet, setLoadingAvaSet] = useState(false);
 
   const submit = async () => {
     if (pick === '') {
       return;
     } else {
-      const {data} = await axios.post(`${setAvatarRoute}/${userObj._id}`, {
-        image: pick,
-      });
-
-      if (data.isSet) {
-        userObj.isAvatarImageSet = true;
-        userObj.avatarImage = data.image;
-        dispatch(logIn({user: userObj}));
+      try {
+        setLoadingAvaSet(true);
+        const {data} = await axios.post(`${setAvatarRoute}/${userObj._id}`, {
+          image: pick,
+        });
+        setLoadingAvaSet(false);
+        if (data.isSet) {
+          userObj.isAvatarImageSet = true;
+          userObj.avatarImage = data.image;
+          dispatch(logIn({user: userObj}));
+        }
+      } catch (error) {
+        setLoadingAvaSet(false);
       }
     }
   };
@@ -97,7 +104,13 @@ const SetAvatarScreen = ({route, navigation}) => {
             </View>
             <View style={styles.row}>
               <TouchableOpacity style={styles.button} onPress={submit}>
-                <Text style={styles.textButton}>SET AT PRtOFILE PITCUTRE</Text>
+                {isLoadingAvaSet ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Text style={styles.textButton}>
+                    SET AT PRtOFILE PITCUTRE
+                  </Text>
+                )}
               </TouchableOpacity>
               <TouchableOpacity
                 style={{
