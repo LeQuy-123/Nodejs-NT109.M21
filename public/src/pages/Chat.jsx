@@ -14,6 +14,8 @@ export default function Chat() {
   const [contacts, setContacts] = useState([]);
   const [currentChat, setCurrentChat] = useState(undefined);
   const [currentUser, setCurrentUser] = useState(undefined);
+  const [isDoneLoadingSocket, setDoneLoadingSocket] = useState(false);
+
   useEffect(async () => {
     if (!localStorage.getItem(process.env.REACT_APP_LOCALHOST_KEY)) {
       navigate("/login");
@@ -27,8 +29,10 @@ export default function Chat() {
   }, []);
   useEffect(() => {
     if (currentUser) {
+      setDoneLoadingSocket(false);
       socket.current = io(host);
       socket.current.emit("add-user", currentUser._id);
+      setDoneLoadingSocket(true);
     }
   }, [currentUser]);
 
@@ -53,7 +57,7 @@ export default function Chat() {
           {currentChat === undefined ? (
             <Welcome />
           ) : (
-            <ChatContainer currentChat={currentChat} socket={socket} />
+            isDoneLoadingSocket && <ChatContainer currentChat={currentChat} socket={socket} />
           )}
         </div>
       </Container>

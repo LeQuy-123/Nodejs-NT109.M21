@@ -138,11 +138,7 @@ const HomeScreen = ({route, navigation}) => {
         <View>
           <FlatList
             refreshControl={
-              <RefreshControl
-                colors="white"
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-              />
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
             }
             style={styles.list}
             ListHeaderComponent={() => (

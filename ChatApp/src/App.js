@@ -8,7 +8,7 @@ import {PersistGate} from 'redux-persist/integration/react';
 const App = () => {
   return (
     <>
-      <StatusBar barStyle="light-content" hidden={false} translucent={true} />
+      <StatusBar barStyle="light-content" hidden={false} />
       <Provider store={store}>
         <PersistGate loading={null} persistor={persistor}>
           <MyStackContent />
