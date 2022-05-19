@@ -247,6 +247,7 @@ const styles = StyleSheet.create({
   list: {
     backgroundColor: 'rgb(8,8,16)',
     width: windowWidth,
+    flex: 1,
   },
   logOutButton: {},
   modalView: {
