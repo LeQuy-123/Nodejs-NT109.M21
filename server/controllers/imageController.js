@@ -31,6 +31,21 @@ module.exports.uploadImage = async (req, res, next) => {
     next(ex);
   }
 };
+module.exports.uploadMultipeImage = async (req, res, next) => {
+  try {
+    const { files } = req;
+    const body = files?.map(file => {
+      return {
+        id: file.id,
+        name: file.filename,
+        mime: file.mimetype,
+      }
+    })
+    return res.send(body);
+  } catch (ex) {
+    next(ex);
+  }
+};
 
 module.exports.getImage = async (req, res, next) => {
   try {
@@ -39,14 +54,31 @@ module.exports.getImage = async (req, res, next) => {
     // if there is an id string, cast it to mongoose's objectId type
     const _id = new ObjectId(id);
     // // search for the image by id
-    gfs.find().toArray().then(files => {
-      console.log("🚀 ~ file: messages.js ~ line 79 ~ gfs.find ~ files", files)
+    gfs.find({_id}).toArray().then(files => {
       if (!files || files.length === 0)
         return res.status(400).send('no files exist');
       // if a file exists, send the data
       gfs.openDownloadStream(_id).pipe(res);
     }).catch((err) => {
       console.log("🚀 ~ file: messages.js ~ line 37 ~ gfs.find ~ err", err)
+    });
+  } catch (ex) {
+    next(ex);
+  }
+};
+
+
+module.exports.deleteImage = async (req, res, next) => {
+  try {
+    const id = req.params?.id;
+    if (!id || id === 'undefined') return res.status(400).send('no image id');
+    // if there is an id string, cast it to mongoose's objectId type
+    const _id = new ObjectId(id);
+    // // search for the image by id
+    gfs.delete(_id).then(files => {
+      return res.status(200).send('delete sucsess');
+    }).catch((err) => {
+      return res.status(400).send(err);
     });
   } catch (ex) {
     next(ex);

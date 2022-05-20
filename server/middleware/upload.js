@@ -23,13 +23,13 @@ const storage = new GridFsStorage({
         const match = ["image/png", "image/jpeg"];
 
         if (match.indexOf(file.mimetype) === -1) {
-            const filename = `${Date.now()}-any-name-${file.originalname}`;
+            const filename = `${Date.now()}-quy-server-${file.originalname}`;
             return filename;
         }
 
         return {
             bucketName: "images",
-            filename: `${Date.now()}-any-name-${file.originalname}`,
+            filename: `${Date.now()}-quy-server-${file.originalname}`,
         };
     },
 });
@@ -60,7 +60,7 @@ module.exports.uploadMiddleware = (req, res, next) => {
 };
 
 module.exports.uploadMultipeMiddleware = (req, res, next) => {
-    const upload = store.single('images');
+    const upload = store.array('images', 12);
     upload(req, res, function (err) {
         if (err instanceof multer.MulterError) {
             return res.status(400).send('File too large');
