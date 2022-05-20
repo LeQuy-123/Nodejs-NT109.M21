@@ -62,84 +62,82 @@ const RegisterScreen = ({route, navigation}) => {
       });
   };
   return (
-    <Root>
-      <TouchableWithoutFeedback
-        onPress={() => {
-          Keyboard.dismiss();
-        }}>
-        <>
-          <SafeAreaView style={styles.container}>
-            <KeyboardAvoidingView
-              enabled
-              behavior={Platform.OS === 'ios' ? 'padding' : null}
-              style={styles.container}>
-              <View style={styles.loginForm}>
-                <LogoComponent />
-                <Formik
-                  validationSchema={SignupSchema}
-                  initialValues={{
-                    userName: '',
-                    email: '',
-                    password: '',
-                    confirmPassword: '',
-                  }}
-                  onSubmit={submit}>
-                  {({handleChange, handleBlur, handleSubmit, values}) => (
-                    <View>
-                      <FiledInput
-                        placeholder="User name"
-                        onChangeText={handleChange('userName')}
-                        value={values.userName}
-                        name="userName"
-                      />
-                      <FiledInput
-                        placeholder="Email"
-                        onChangeText={handleChange('email')}
-                        value={values.email}
-                        name="email"
-                      />
-                      <FiledInputPassword
-                        placeholder="Password"
-                        onChangeText={handleChange('password')}
-                        value={values.password}
-                        name="password"
-                      />
-                      <FiledInputPassword
-                        placeholder="Confirm password"
-                        onChangeText={handleChange('confirmPassword')}
-                        value={values.confirmPassword}
-                        name="confirmPassword"
-                      />
+    <TouchableWithoutFeedback
+      onPress={() => {
+        Keyboard.dismiss();
+      }}>
+      <>
+        <SafeAreaView style={styles.container}>
+          <KeyboardAvoidingView
+            enabled
+            behavior={Platform.OS === 'ios' ? 'padding' : null}
+            style={styles.container}>
+            <View style={styles.loginForm}>
+              <LogoComponent />
+              <Formik
+                validationSchema={SignupSchema}
+                initialValues={{
+                  userName: '',
+                  email: '',
+                  password: '',
+                  confirmPassword: '',
+                }}
+                onSubmit={submit}>
+                {({handleChange, handleBlur, handleSubmit, values}) => (
+                  <View>
+                    <FiledInput
+                      placeholder="User name"
+                      onChangeText={handleChange('userName')}
+                      value={values.userName}
+                      name="userName"
+                    />
+                    <FiledInput
+                      placeholder="Email"
+                      onChangeText={handleChange('email')}
+                      value={values.email}
+                      name="email"
+                    />
+                    <FiledInputPassword
+                      placeholder="Password"
+                      onChangeText={handleChange('password')}
+                      value={values.password}
+                      name="password"
+                    />
+                    <FiledInputPassword
+                      placeholder="Confirm password"
+                      onChangeText={handleChange('confirmPassword')}
+                      value={values.confirmPassword}
+                      name="confirmPassword"
+                    />
+                    <TouchableOpacity
+                      onPress={handleSubmit}
+                      style={styles.button}>
+                      {isLoading ? (
+                        <ActivityIndicator color="white" size="small" />
+                      ) : (
+                        <Text style={styles.textButton}>CREATE USER</Text>
+                      )}
+                    </TouchableOpacity>
+                    <View style={styles.row}>
+                      <Text style={styles.textNavigate}>
+                        ALREADY HAVE AN ACCOUNT?{' '}
+                      </Text>
                       <TouchableOpacity
-                        onPress={handleSubmit}
-                        style={styles.button}>
-                        {isLoading ? (
-                          <ActivityIndicator color="white" size="small" />
-                        ) : (
-                          <Text style={styles.textButton}>CREATE USER</Text>
-                        )}
+                        style={styles.buttonNavigate}
+                        onPress={() =>
+                          navigation.navigate(SCREEN_NAME.LOGIN_SCREEN)
+                        }>
+                        <Text style={styles.textNavigateButton}>LOGIN.</Text>
                       </TouchableOpacity>
-                      <View style={styles.row}>
-                        <Text style={styles.textNavigate}>
-                          ALREADY HAVE AN ACCOUNT?{' '}
-                        </Text>
-                        <TouchableOpacity
-                          style={styles.buttonNavigate}
-                          onPress={() =>
-                            navigation.navigate(SCREEN_NAME.LOGIN_SCREEN)
-                          }>
-                          <Text style={styles.textNavigateButton}>LOGIN.</Text>
-                        </TouchableOpacity>
-                      </View>
                     </View>
-                  )}
-                </Formik>
-              </View>
-            </KeyboardAvoidingView>
-          </SafeAreaView>
-        </>
-      </TouchableWithoutFeedback>
-    </Root>
+                  </View>
+                )}
+              </Formik>
+            </View>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
+      </>
+    </TouchableWithoutFeedback>
   );
 };
 

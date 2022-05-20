@@ -46,6 +46,7 @@ module.exports.getAllUsers = async (req, res, next) => {
       "username",
       "avatarImage",
       "_id",
+      "isCustomAvatar",
     ]);
     return res.json(users);
   } catch (ex) {
@@ -56,12 +57,14 @@ module.exports.getAllUsers = async (req, res, next) => {
 module.exports.setAvatar = async (req, res, next) => {
   try {
     const userId = req.params.id;
-    const avatarImage = req.body.image;
+    const {avatarImage, isCustomAvatar} = req.body;
+    console.log("🚀 ~ file: userController.js ~ line 60 ~ module.exports.setAvatar= ~ req.body", req.body)
     const userData = await User.findByIdAndUpdate(
       userId,
       {
         isAvatarImageSet: true,
         avatarImage,
+        isCustomAvatar,
       },
       { new: true }
     );

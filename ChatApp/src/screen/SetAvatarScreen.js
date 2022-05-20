@@ -1,6 +1,5 @@
 /* eslint-disable react-native/no-inline-styles */
-/* eslint-disable react-hooks/exhaustive-deps */
-import React, {useEffect, useState} from 'react';
+import React, {useRef, useEffect, useState} from 'react';
 import {
   View,
   Dimensions,
@@ -12,7 +11,6 @@ import {
 } from 'react-native';
 const windowWidth = Dimensions.get('window').width;
 import {useDispatch} from 'react-redux';
-import {Root, Toast} from 'react-native-popup-confirm-toast';
 import axios from 'axios';
 const api = 'https://api.multiavatar.com/4645646';
 import {Buffer} from 'buffer';
@@ -21,33 +19,63 @@ import base64 from 'react-native-base64';
 import {IMAGE} from '../assets';
 import {SCREEN_NAME} from '../navigation/screen';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import {setAvatarRoute} from '../utils/APIRoutes';
+import {setAvatarRoute, uploadImageRoute} from '../utils/APIRoutes';
 import {logIn} from '../redux/authSlice';
+import AvatarPicker from '../components/AvatarPicker';
+import {Root} from 'react-native-popup-confirm-toast';
 
 const SetAvatarScreen = ({route, navigation}) => {
   const userObj = route.params?.user?.user;
   const dispatch = useDispatch();
   const [avatars, setAvatars] = useState([]);
-  const [pick, setPicker] = useState('');
+  const [customAvatar, setCustomAvatar] = useState({
+    isCustom: false,
+    path: null,
+    file: {},
+  });
+
   const [isLoading, setLoading] = useState(true);
   const [isLoadingAvaSet, setLoadingAvaSet] = useState(false);
 
   const submit = async () => {
-    if (pick === '') {
+    if (!customAvatar.path) {
       return;
     } else {
       try {
         setLoadingAvaSet(true);
+        var imagesUpload = '';
+        if (customAvatar.isCustom) {
+          var formdata = new FormData();
+          formdata.append('images', {
+            uri: customAvatar.path,
+            type: 'image/jpeg',
+            name: 'customAvatar.jpg',
+          });
+          imagesUpload = await axios({
+            method: 'post',
+            url: uploadImageRoute,
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+            data: formdata,
+          });
+        }
         const {data} = await axios.post(`${setAvatarRoute}/${userObj._id}`, {
-          image: pick,
+          avatarImage: imagesUpload?.data || customAvatar.path,
+          isCustomAvatar: customAvatar.isCustom,
         });
         setLoadingAvaSet(false);
         if (data.isSet) {
           userObj.isAvatarImageSet = true;
           userObj.avatarImage = data.image;
+          userObj.isCustomAvatar = customAvatar.isCustom;
           dispatch(logIn({user: userObj}));
         }
       } catch (error) {
+        console.log(
+          '🚀 ~ file: SetAvatarScreen.js ~ line 81 ~ submit ~ error',
+          error,
+        );
         setLoadingAvaSet(false);
       }
     }
@@ -87,12 +115,17 @@ const SetAvatarScreen = ({route, navigation}) => {
             </Text>
             <View style={styles.listAva}>
               {avatars.map((avatar, index) => {
-                const check = pick === avatar;
+                const check = customAvatar?.path === avatar;
                 return (
                   <TouchableOpacity
                     key={avatar}
                     style={styles.item}
-                    onPress={() => setPicker(avatar)}>
+                    onPress={() => {
+                      setCustomAvatar({
+                        path: avatar,
+                        isCustom: false,
+                      });
+                    }}>
                     <SvgXml
                       xml={getBasse64SvgImg(avatar)}
                       width={check ? 80 : 50}
@@ -102,14 +135,30 @@ const SetAvatarScreen = ({route, navigation}) => {
                 );
               })}
             </View>
+            <Text style={styles.textNavigate}>
+              Or upload your own avatar from your device
+            </Text>
+            <AvatarPicker
+              avatar={customAvatar}
+              onPickAvatar={(path, res) => {
+                setCustomAvatar({
+                  path,
+                  isCustom: true,
+                  file: res,
+                });
+              }}
+            />
             <View style={styles.row}>
-              <TouchableOpacity style={styles.button} onPress={submit}>
+              <TouchableOpacity
+                style={{
+                  ...styles.button,
+                  width: windowWidth - 160,
+                }}
+                onPress={submit}>
                 {isLoadingAvaSet ? (
                   <ActivityIndicator size="small" color="white" />
                 ) : (
-                  <Text style={styles.textButton}>
-                    SET AT PRtOFILE PITCUTRE
-                  </Text>
+                  <Text style={styles.textButton}>SET AT PROFILE PITCUTRE</Text>
                 )}
               </TouchableOpacity>
               <TouchableOpacity
@@ -165,6 +214,9 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 20,
+    textAlign: 'center',
+    width: windowWidth - 80,
+    marginTop: 20,
   },
   textNavigateB: {
     color: 'white',

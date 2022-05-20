@@ -16,8 +16,6 @@ import {
 import {useDispatch} from 'react-redux';
 import {createRoom, getContacts, getRoomHaveUser, logout} from '../redux/thunk';
 import WelcomeComponent from '../components/WelcomeComponent';
-import {SvgXml} from 'react-native-svg';
-import base64 from 'react-native-base64';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useFocusEffect} from '@react-navigation/native';
 import axios from 'axios';
@@ -25,13 +23,9 @@ import {store} from '../redux/store';
 
 import {SCREEN_NAME} from '../navigation/screen';
 import {getRoomHaveUserRoute, allUsersRoute} from '../utils/APIRoutes';
+import RenderAvatar from '../components/RenderAvatar';
 const windowWidth = Dimensions.get('window').width;
 
-const getBasse64SvgImg = icon => {
-  let finalbase64String = '';
-  finalbase64String = 'data:image/svg+xml;base64,' + base64.decode(icon);
-  return finalbase64String;
-};
 const HomeScreen = ({route, navigation}) => {
   const dispatch = useDispatch();
   const [contacs, setContacs] = useState([]);
@@ -69,6 +63,7 @@ const HomeScreen = ({route, navigation}) => {
       );
     }
   };
+
   const renderItem = ({item}) => {
     return (
       <TouchableOpacity
@@ -82,17 +77,7 @@ const HomeScreen = ({route, navigation}) => {
             navigation.navigate(SCREEN_NAME.CHAT_SCREEN, {currentUser: item});
           }
         }}>
-        {item.avatarImage ? (
-          <SvgXml
-            xml={getBasse64SvgImg(item.avatarImage)}
-            width={50}
-            height={50}
-          />
-        ) : (
-          <View style={styles.avatar}>
-            <Text style={styles.nameAva}>{item.username?.split('')[0]}</Text>
-          </View>
-        )}
+        <RenderAvatar user={item} />
         <Text style={styles.textItem}>{item.username || item.roomName}</Text>
         <MaterialCommunityIcons
           name={item.roomName ? 'wechat' : 'chat'}
