@@ -1,6 +1,5 @@
 const multer = require("multer");
 const { GridFsStorage } = require('multer-gridfs-storage');
-const crypto = require('crypto');
 const path = require('path');
 
 function checkFileType(file, cb) {
@@ -45,6 +44,22 @@ const store = multer({
     }});
 
 module.exports.uploadMiddleware = (req, res, next) => {
+    const upload = store.single('images');
+    upload(req, res, function (err) {
+        if (err instanceof multer.MulterError) {
+            return res.status(400).send('File too large');
+        } else if (err) {
+            // check if our filetype error occurred
+            if (err === 'filetype') return res.status(400).send('Image files only');
+            // An unknown error occurred when uploading.
+            return res.sendStatus(500);
+        }
+        // all good, proceed
+        next();
+    });
+};
+
+module.exports.uploadMultipeMiddleware = (req, res, next) => {
     const upload = store.single('images');
     upload(req, res, function (err) {
         if (err instanceof multer.MulterError) {
