@@ -19,9 +19,10 @@ const ChatInput = props => {
   const [isVisible, setVisible] = useState(false);
 
   const sendChat = () => {
-    if (msg.length > 0) {
-      props.handleSendMsg(msg);
+    if (msg.length > 0 || images.length > 0) {
+      props.handleSendMsg(msg, images);
       setMsg('');
+      setImages([]);
     }
   };
   const removeImage = item => {
@@ -90,8 +91,8 @@ const ChatInput = props => {
 const styles = StyleSheet.create({
   closeIcon: {
     position: 'absolute',
-    top: -5,
-    right: -5,
+    top: 0,
+    right: -2,
   },
   container: {
     width: windowWidth,

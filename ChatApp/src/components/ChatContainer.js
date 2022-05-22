@@ -1,20 +1,35 @@
 /* eslint-disable react-native/no-inline-styles */
 import axios from 'axios';
 import React, {useEffect, useRef, useState} from 'react';
-import {View, StyleSheet, Dimensions, FlatList, Text} from 'react-native';
+import {
+  View,
+  Image,
+  StyleSheet,
+  Dimensions,
+  FlatList,
+  Text,
+} from 'react-native';
 import {useSelector, useDispatch} from 'react-redux';
 import ChatInput from '../components/ChatInput';
 import {getChatList} from '../redux/thunk';
-import {sendMessageRoute} from '../utils/APIRoutes';
-import {SvgXml} from 'react-native-svg';
-import base64 from 'react-native-base64';
+import {
+  sendMessageRoute,
+  getImageRoute,
+  uploadMultipeImageRoute,
+} from '../utils/APIRoutes';
 import RenderAvatar from './RenderAvatar';
 const windowWidth = Dimensions.get('window').width;
 
-const getBasse64SvgImg = icon => {
-  let finalbase64String = '';
-  finalbase64String = 'data:image/svg+xml;base64,' + base64.decode(icon);
-  return finalbase64String;
+const ServerImage = props => {
+  const {id = ''} = props;
+  return (
+    <View style={styles.container}>
+      <Image
+        source={{uri: `${getImageRoute}/${id}`}}
+        style={styles.imagesText}
+      />
+    </View>
+  );
 };
 const ChatContainer = props => {
   const {socket, currentChat} = props;
@@ -47,7 +62,11 @@ const ChatContainer = props => {
     if (socket.current) {
       socket.current.on('msg-recieve', data => {
         if (data.from === currentChat._id) {
-          setArrivalMessage({fromSelf: false, message: data.msg});
+          setArrivalMessage({
+            fromSelf: false,
+            message: data.msg,
+            images: data.images,
+          });
           setTimeout(() => {
             refList?.current?.scrollToEnd();
           }, 100);
@@ -74,19 +93,41 @@ const ChatContainer = props => {
   useEffect(() => {
     arrivalMessage && setMessages(prev => [...prev, arrivalMessage]);
   }, [arrivalMessage]);
-  const handleSendMsg = async msg => {
+  const handleSendMsg = async (msg, images) => {
+    var imagesUpload = [];
+    if (images?.length > 0) {
+      var formdata = new FormData();
+      images.map((image, index) => {
+        formdata.append('images', {
+          uri: image.uri,
+          type: image.type,
+          name: image.fileName,
+        });
+      });
+      imagesUpload = await axios({
+        method: 'post',
+        url: uploadMultipeImageRoute,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        data: formdata,
+      });
+    }
+    const msgImage = imagesUpload.data?.map((image, index) => image.id);
     socket.current.emit('send-msg', {
       to: currentChat._id,
       from: user._id,
       msg,
+      images: msgImage,
     });
     await axios.post(sendMessageRoute, {
       from: user._id,
       to: currentChat._id,
       message: msg,
+      images: msgImage,
     });
     const msgs = [...messages];
-    msgs.push({fromSelf: true, message: msg});
+    msgs.push({fromSelf: true, message: msg, images: msgImage});
     setMessages(msgs);
     setTimeout(() => {
       refList?.current?.scrollToEnd();
@@ -101,13 +142,26 @@ const ChatContainer = props => {
           flexDirection: !item.fromSelf ? 'row' : 'row-reverse',
         }}>
         <RenderAvatar user={item.fromSelf ? user : currentChat} />
-        <Text
+        <View
           style={{
             ...styles.boubleText,
             marginHorizontal: 10,
           }}>
-          {item?.message}
-        </Text>
+          <Text
+            style={{
+              color: 'white',
+            }}>
+            {item?.message}
+          </Text>
+          {item?.images && (
+            <FlatList
+              data={item?.images}
+              renderItem={({item, index}) => {
+                return <ServerImage id={item} />;
+              }}
+            />
+          )}
+        </View>
       </View>
     );
   };
@@ -164,9 +218,7 @@ const styles = StyleSheet.create({
   boubleText: {
     padding: 10,
     borderRadius: 7,
-    overflow: 'hidden',
     backgroundColor: 'rgb(28,13,50)',
-    color: 'white',
     maxWidth: windowWidth - 90,
   },
   highlight: {
@@ -175,6 +227,11 @@ const styles = StyleSheet.create({
   avaFake: {
     width: 50,
     height: 50,
+  },
+  imagesText: {
+    width: (windowWidth - 90) / 2,
+    height: (windowWidth - 90) / 2,
+    marginVertical: 5,
   },
 });
 

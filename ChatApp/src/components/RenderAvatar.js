@@ -4,7 +4,7 @@ import {getImageRoute} from '../utils/APIRoutes';
 import {SvgXml} from 'react-native-svg';
 import base64 from 'react-native-base64';
 
-const ServerImage = props => {
+export const ServerImage = props => {
   const {id = ''} = props;
   return (
     <View style={styles.container}>

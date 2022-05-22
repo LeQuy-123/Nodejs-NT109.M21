@@ -3,7 +3,8 @@ const mongoose = require("mongoose");
 const RoomMessageSchema = mongoose.Schema(
   {
     message: {
-      text: { type: String, required: true },
+      text: { type: String },
+      images: [{ type: String }],
     },
     from: Object,
     to: String,
