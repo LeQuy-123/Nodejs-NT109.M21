@@ -164,6 +164,7 @@ module.exports.getUsersInRoomAPI = async (req, res, next) => {
       "username",
       "avatarImage",
       "_id",
+      "isCustomAvatar",
     ]);
     return res.json(userList);
   } catch (ex) {

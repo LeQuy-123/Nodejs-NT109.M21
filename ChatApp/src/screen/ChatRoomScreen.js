@@ -12,13 +12,13 @@ import {
 } from 'react-native';
 import ChatRoomContainer from '../components/ChatRoomContainer';
 import {io} from 'socket.io-client';
-import {host} from '../utils/APIRoutes';
+import {host, leaveRoute} from '../utils/APIRoutes';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import {useDispatch, useSelector} from 'react-redux';
+import {useSelector} from 'react-redux';
 import {IMAGE} from '../assets';
-import {leaveRoom} from '../redux/thunk';
 import {Root, Popup} from 'react-native-popup-confirm-toast';
 import UserList from '../components/UserList';
+import axios from 'axios';
 
 const ChatRoomScreen = ({route, navigation}) => {
   const {roomName} = route.params;
@@ -50,7 +50,10 @@ const ChatRoomScreen = ({route, navigation}) => {
   }, [roomName, userInfo]);
   const leaveRoomRequest = async () => {
     try {
-      await leaveRoom(roomName);
+      await axios.post(leaveRoute, {
+        roomName: roomName,
+        hostUser: userInfo._id,
+      });
       Popup.hide();
       navigation.goBack();
     } catch (error) {

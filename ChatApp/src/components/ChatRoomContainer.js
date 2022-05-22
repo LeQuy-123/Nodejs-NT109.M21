@@ -9,8 +9,8 @@ import {SvgXml} from 'react-native-svg';
 import base64 from 'react-native-base64';
 const windowWidth = Dimensions.get('window').width;
 import {Toast} from 'react-native-popup-confirm-toast';
-import {getAllRoomMsg} from '../redux/thunk';
 import {store} from '../redux/store';
+import RenderAvatar from './RenderAvatar';
 
 const getBasse64SvgImg = icon => {
   let finalbase64String = '';
@@ -101,28 +101,6 @@ const ChatRoomContainer = props => {
     }, 500);
   };
 
-  const renderAvatar = (item, index) => {
-    if (item?.from.avatarImage && !item?.fromSelf) {
-      return (
-        <SvgXml
-          xml={getBasse64SvgImg(item?.from.avatarImage)}
-          width={50}
-          height={50}
-        />
-      );
-    } else if (user?.avatarImage && item?.fromSelf) {
-      return (
-        <SvgXml
-          xml={getBasse64SvgImg(user.avatarImage)}
-          width={50}
-          height={50}
-        />
-      );
-    } else {
-      return null;
-    }
-  };
-
   const renderItem = ({item, index}) => {
     return (
       <View
@@ -130,7 +108,7 @@ const ChatRoomContainer = props => {
           ...styles.chatContainer,
           flexDirection: !item.fromSelf ? 'row' : 'row-reverse',
         }}>
-        {renderAvatar(item, index)}
+        <RenderAvatar user={item.from} />
         <Text
           style={{
             ...styles.boubleText,

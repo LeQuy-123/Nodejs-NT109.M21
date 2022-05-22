@@ -3,6 +3,7 @@ import {View, Dimensions, Text, StyleSheet, FlatList} from 'react-native';
 import {getRoomUsersRoute} from '../utils/APIRoutes';
 import {getBasse64SvgImg} from '../utils/utils';
 import axios from 'axios';
+import RenderAvatar from './RenderAvatar';
 
 const UserList = props => {
   const {roomName, socket} = props;
@@ -40,7 +41,7 @@ const UserList = props => {
   const renderItem = ({item}) => {
     return (
       <View style={styles.item}>
-        {getBasse64SvgImg(item?.avatarImage)}
+        <RenderAvatar user={item} />
         <Text style={styles.name}>{item.username}</Text>
       </View>
     );

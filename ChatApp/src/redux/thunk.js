@@ -120,22 +120,6 @@ const createRoom = createAsyncThunk(
     }
   },
 );
-const leaveRoom = createAsyncThunk(
-  'users/leaveRoom',
-  async (roomName, thunkAPI) => {
-    const id = store.getState().authReducer.userInfo?._id;
-    const response = await axios.post(leaveRoute, {
-      roomName: roomName,
-      hostUser: id,
-    });
-    if (response.status !== 200) {
-      return thunkAPI.rejectWithValue({error: 'Server error'});
-    }
-    if (response.status === 200) {
-      return thunkAPI.fulfillWithValue(response.data);
-    }
-  },
-);
 const getAllRoomMsg = createAsyncThunk(
   'users/getAllRoomMsg',
   async (roomName, thunkAPI) => {
@@ -169,7 +153,6 @@ const getRoomUsers = createAsyncThunk(
 );
 export {
   getAllRoomMsg,
-  leaveRoom,
   createRoom,
   login,
   register,

@@ -8,6 +8,7 @@ import {getChatList} from '../redux/thunk';
 import {sendMessageRoute} from '../utils/APIRoutes';
 import {SvgXml} from 'react-native-svg';
 import base64 from 'react-native-base64';
+import RenderAvatar from './RenderAvatar';
 const windowWidth = Dimensions.get('window').width;
 
 const getBasse64SvgImg = icon => {
@@ -92,34 +93,6 @@ const ChatContainer = props => {
     }, 500);
   };
 
-  const renderAvatar = (item, index) => {
-    if (
-      messages[index + 1] &&
-      messages[index].fromSelf === messages[index + 1].fromSelf
-    ) {
-      return <View style={styles.avaFake} />;
-    }
-    if (currentChat.avatarImage && !item?.fromSelf) {
-      return (
-        <SvgXml
-          xml={getBasse64SvgImg(currentChat.avatarImage)}
-          width={50}
-          height={50}
-        />
-      );
-    } else if (user?.avatarImage && item?.fromSelf) {
-      return (
-        <SvgXml
-          xml={getBasse64SvgImg(user.avatarImage)}
-          width={50}
-          height={50}
-        />
-      );
-    } else {
-      return null;
-    }
-  };
-
   const renderItem = ({item, index}) => {
     return (
       <View
@@ -127,7 +100,7 @@ const ChatContainer = props => {
           ...styles.chatContainer,
           flexDirection: !item.fromSelf ? 'row' : 'row-reverse',
         }}>
-        {renderAvatar(item, index)}
+        <RenderAvatar user={item.fromSelf ? user : currentChat} />
         <Text
           style={{
             ...styles.boubleText,
@@ -155,11 +128,7 @@ const ChatContainer = props => {
                 ...styles.chatContainer,
                 flexDirection: 'row',
               }}>
-              <SvgXml
-                xml={getBasse64SvgImg(currentChat.avatarImage)}
-                width={50}
-                height={50}
-              />
+              <RenderAvatar user={currentChat} />
               <Text
                 style={{
                   ...styles.boubleText,
