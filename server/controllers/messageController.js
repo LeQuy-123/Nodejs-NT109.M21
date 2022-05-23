@@ -40,3 +40,23 @@ module.exports.addMessage = async (req, res, next) => {
     next(ex);
   }
 };
+
+module.exports.getAllImageInChat = async (req, res, next) => {
+  try {
+    const { from, to } = req.body;
+    const messages = await Messages.find({
+      users: {
+        $all: [from, to],
+      },
+    }).sort({ updatedAt: 1 });
+    const images = [];
+    messages.forEach(message => {
+      if (message?.message?.images && message?.message?.images.length > 0) {
+        images.push(...message.message.images);
+      }
+    });
+    return res.json(images);
+  } catch (ex) {
+    next(ex);
+  }
+};

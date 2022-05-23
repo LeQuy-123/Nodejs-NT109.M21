@@ -30,6 +30,7 @@ const storage = new GridFsStorage({
         return {
             bucketName: "images",
             filename: `${Date.now()}-quy-server-${file.originalname}`,
+            from: req.body.from || "",
         };
     },
 });

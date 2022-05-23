@@ -5,10 +5,13 @@ import {SvgXml} from 'react-native-svg';
 import base64 from 'react-native-base64';
 
 export const ServerImage = props => {
-  const {id = ''} = props;
+  const {id = '', style = {}} = props;
   return (
     <View style={styles.container}>
-      <Image source={{uri: `${getImageRoute}/${id}`}} style={styles.logo} />
+      <Image
+        source={{uri: `${getImageRoute}/${id}`}}
+        style={{...styles.logo, ...style}}
+      />
     </View>
   );
 };

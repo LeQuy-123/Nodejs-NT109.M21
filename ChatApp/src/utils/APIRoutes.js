@@ -1,5 +1,5 @@
 export const host = 'http://localhost:5000';
-// export const host = 'https://quy-node-server.herokuapp.com';
+// export const host = 'https://quy-node-server.herokuapp.com'; //heroku host
 export const loginRoute = `${host}/api/auth/login`;
 export const registerRoute = `${host}/api/auth/register`;
 export const logoutRoute = `${host}/api/auth/logout`;
@@ -18,3 +18,4 @@ export const getRoomHaveUserRoute = `${host}/api/room/getRoomHaveUser`;
 export const uploadImageRoute = `${host}/api/image/uploadImage`;
 export const uploadMultipeImageRoute = `${host}/api/image/uploadImages`;
 export const getImageRoute = `${host}/api/image`;
+export const getImagesInChatRoute = `${host}/api/messages/getImages`;
