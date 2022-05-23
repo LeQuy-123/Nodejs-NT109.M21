@@ -1,7 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {View, Dimensions, Text, StyleSheet, FlatList} from 'react-native';
 import {getRoomUsersRoute} from '../utils/APIRoutes';
-import {getBasse64SvgImg} from '../utils/utils';
 import axios from 'axios';
 import RenderAvatar from './RenderAvatar';
 

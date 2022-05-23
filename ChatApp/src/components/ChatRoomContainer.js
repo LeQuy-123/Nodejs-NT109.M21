@@ -8,6 +8,8 @@ import {
   Dimensions,
   FlatList,
   Text,
+  TouchableWithoutFeedback,
+  TouchableOpacity,
 } from 'react-native';
 import {useSelector} from 'react-redux';
 import ChatInput from './ChatInput';
@@ -16,11 +18,13 @@ import {
   uploadMultipeImageRoute,
   getAllRoomMessageRoute,
   getImageRoute,
+  deleteRoomMessageRoute,
 } from '../utils/APIRoutes';
 const windowWidth = Dimensions.get('window').width;
 import {Toast} from 'react-native-popup-confirm-toast';
 import {store} from '../redux/store';
 import RenderAvatar from './RenderAvatar';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 const ServerImage = props => {
   const {id = ''} = props;
   return (
@@ -35,9 +39,11 @@ const ServerImage = props => {
 const ChatRoomContainer = props => {
   const {socket, currentChat, roomName} = props;
   const refList = useRef();
+  const inputRef = useRef();
   const [arrivalMessage, setArrivalMessage] = useState(null);
+  const [messageDeleteId, setMessageDeleteId] = useState();
+  const [showDelete, setShowDelete] = useState(false);
   const [messages, setMessages] = useState([]);
-  console.log("🚀 ~ file: ChatRoomContainer.js ~ line 40 ~ messages", messages)
   const user = useSelector(state => state.authReducer.userInfo);
   useEffect(() => {
     if (socket.current) {
@@ -61,18 +67,47 @@ const ChatRoomContainer = props => {
           position: 'top',
         });
       });
-      socket.current.on('message-room-recieve', ({from, to, msg}) => {
-        setArrivalMessage({fromSelf: false, message: msg, from, to});
-        setTimeout(() => {
-          refList?.current?.scrollToEnd();
-        }, 100);
+      socket.current.on(
+        'message-room-recieve',
+        ({from, to, msg, images, id}) => {
+          setArrivalMessage({
+            fromSelf: from._id === user._id,
+            message: msg,
+            from,
+            to,
+            images,
+            id: id,
+          });
+          setTimeout(() => {
+            refList?.current?.scrollToEnd();
+          }, 100);
+        },
+      );
+      socket.current.on('message-room-delete', ({msgId}) => {
+        setMessageDeleteId(msgId);
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [socket, user, currentChat]);
   useEffect(() => {
     arrivalMessage && setMessages(prev => [...prev, arrivalMessage]);
   }, [arrivalMessage]);
-
+  useEffect(() => {
+    messageDeleteId &&
+      setMessages(prev =>
+        prev.map(msg => {
+          // eslint-disable-next-line eqeqeq
+          if (msg.id == messageDeleteId) {
+            return {
+              ...msg,
+              images: [],
+              message: '',
+            };
+          }
+          return msg;
+        }),
+      );
+  }, [messageDeleteId]);
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -90,6 +125,7 @@ const ChatRoomContainer = props => {
     fetchData();
   }, [roomName]);
   const handleSendMsg = async (msg, images) => {
+    inputRef.current.setLoading(true);
     var imagesUpload = [];
     if (images?.length > 0) {
       var formdata = new FormData();
@@ -110,73 +146,119 @@ const ChatRoomContainer = props => {
       });
     }
     const msgImage = imagesUpload.data?.map((image, index) => image.id);
+    const userData = user;
+    delete userData.password;
+    delete userData.isAvatarImageSet;
+    delete userData.email;
+    const res = await axios.post(addRoomMessageRoute, {
+      from: userData,
+      to: roomName,
+      message: msg,
+      images: msgImage || [],
+    });
     socket.current.emit('send-message-room', {
       to: roomName,
       from: user,
       msg,
       images: msgImage,
+      id: res?.data._id,
     });
-    const userData = user;
-    delete userData.password;
-    delete userData.isAvatarImageSet;
-    delete userData.email;
-    await axios.post(addRoomMessageRoute, {
-      from: userData,
-      to: roomName,
-      message: msg,
-      images: msgImage,
-    });
-    const msgs = [...messages];
-    msgs.push({
-      fromSelf: true,
-      message: msg,
-      to: roomName,
-      from: user,
-      images: msgImage,
-    });
-    setMessages(msgs);
+    inputRef.current.setLoading(false);
     setTimeout(() => {
       refList?.current?.scrollToEnd();
     }, 500);
   };
-
+  const handleDeleteMsg = async id => {
+    try {
+      const newList = messages?.map((obj, index) => {
+        return obj.id === id
+          ? {
+              from: obj.from,
+              fromSelf: obj.fromSelf,
+              id: obj.id,
+              images: [],
+              message: '',
+            }
+          : obj;
+      });
+      socket.current.emit('delete-message-room', {
+        msgId: id,
+        to: roomName,
+      });
+      await axios.delete(`${deleteRoomMessageRoute}/${id}`);
+      setMessages(newList);
+      setShowDelete(false);
+    } catch (error) {
+      console.log('🚀 ~ file: ChatRoomContainer.js ~ line 147 ~ id', error);
+    }
+  };
   const renderItem = ({item, index}) => {
     return (
-      <View
-        style={{
-          ...styles.chatContainer,
-          flexDirection: !item.fromSelf ? 'row' : 'row-reverse',
-        }}>
-        <RenderAvatar user={item.from} />
+      <TouchableWithoutFeedback onLongPress={() => setShowDelete(!showDelete)}>
         <View
           style={{
-            ...styles.boubleText,
-            marginHorizontal: 10,
+            ...styles.chatContainer,
+            flexDirection: !item.fromSelf ? 'row' : 'row-reverse',
           }}>
-          <Text
+          <RenderAvatar user={item.from} />
+
+          <View
             style={{
-              color: 'white',
+              ...styles.boubleText,
+              marginHorizontal: 10,
             }}>
-            {item?.message}
-          </Text>
-          {item?.images && (
-            <FlatList
-              data={item?.images}
-              // eslint-disable-next-line no-shadow
-              renderItem={({item, index}) => {
-                return <ServerImage id={item} />;
-              }}
-            />
-          )}
+            {!item?.message && item?.images?.length === 0 ? (
+              <Text
+                style={{
+                  color: '#ffffff60',
+                }}>
+                (Message has been deleted)
+              </Text>
+            ) : (
+              <>
+                <Text
+                  style={{
+                    color: 'white',
+                  }}>
+                  {item?.message}
+                </Text>
+                {item?.images && (
+                  <View style={{}}>
+                    {item?.images?.map(image => {
+                      return <ServerImage key={image} id={image} />;
+                    })}
+                  </View>
+                )}
+                {showDelete && item.fromSelf && (
+                  <TouchableOpacity
+                    onPress={() => handleDeleteMsg(item.id)}
+                    style={styles.deleteBtn}>
+                    <MaterialCommunityIcons
+                      name="delete-circle"
+                      color="#ffffff60"
+                      size={25}
+                    />
+                  </TouchableOpacity>
+                )}
+              </>
+            )}
+          </View>
         </View>
-      </View>
+      </TouchableWithoutFeedback>
     );
   };
 
   return (
     <View style={styles.container}>
-      <FlatList ref={refList} data={messages} renderItem={renderItem} />
-      <ChatInput handleSendMsg={handleSendMsg} />
+      <FlatList
+        ref={refList}
+        data={messages}
+        renderItem={renderItem}
+        keyExtractor={(item, index) => {
+          return item.id;
+        }}
+      />
+      <ChatInput ref={inputRef} handleSendMsg={handleSendMsg} />
     </View>
   );
 };
@@ -213,6 +295,13 @@ const styles = StyleSheet.create({
     width: (windowWidth - 90) / 2,
     height: (windowWidth - 90) / 2,
     marginVertical: 5,
+  },
+  deleteBtn: {
+    position: 'absolute',
+    bottom: -10,
+    left: -15,
+    zIndex: 9,
+    width: 25,
   },
 });
 

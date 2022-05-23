@@ -8,14 +8,19 @@ import {
   Dimensions,
   FlatList,
   Text,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import {useSelector, useDispatch} from 'react-redux';
 import ChatInput from '../components/ChatInput';
-import {getChatList} from '../redux/thunk';
+import {store} from '../redux/store';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   sendMessageRoute,
   getImageRoute,
   uploadMultipeImageRoute,
+  recieveMessageRoute,
+  deleteMessageRoute,
 } from '../utils/APIRoutes';
 import RenderAvatar from './RenderAvatar';
 const windowWidth = Dimensions.get('window').width;
@@ -34,28 +39,37 @@ const ServerImage = props => {
 const ChatContainer = props => {
   const {socket, currentChat} = props;
   const refList = useRef();
+  const inputRef = useRef();
+
   const [arrivalMessage, setArrivalMessage] = useState(null);
   const [userIsTyping, setUserTyping] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
+  const [messageDeleteId, setMessageDeleteId] = useState();
 
   const [messages, setMessages] = useState([]);
   const user = useSelector(state => state.authReducer.userInfo);
   const dispatch = useDispatch();
 
   useEffect(() => {
-    dispatch(getChatList(currentChat._id))
-      .unwrap()
-      .then(originalPromiseResult => {
-        setMessages(originalPromiseResult);
+    const fetchData = async () => {
+      try {
+        const id = store.getState().authReducer.userInfo?._id;
+        const response = await axios.post(recieveMessageRoute, {
+          from: id,
+          to: currentChat._id,
+        });
+        setMessages(response.data);
         setTimeout(() => {
           refList?.current?.scrollToEnd();
         }, 500);
-      })
-      .catch(rejectedValueOrSerializedError => {
+      } catch (error) {
         console.log(
-          '🚀 ~ file: HomeScreen.js ~ line 19 ~ useEffect ~ rejectedValueOrSerializedError',
-          rejectedValueOrSerializedError,
+          '🚀 ~ file: ChatContainer.js ~ line 59 ~ fetchData ~ error',
+          error,
         );
-      });
+      }
+    };
+    fetchData();
   }, [dispatch, currentChat, user, socket]);
 
   useEffect(() => {
@@ -88,13 +102,33 @@ const ChatContainer = props => {
           }, 100);
         }
       });
+      socket.current.on('message-delete', data => {
+        setMessageDeleteId(data.msgId);
+      });
     }
   }, [socket, user, currentChat]);
   useEffect(() => {
     arrivalMessage && setMessages(prev => [...prev, arrivalMessage]);
   }, [arrivalMessage]);
+  useEffect(() => {
+    messageDeleteId &&
+      setMessages(prev =>
+        prev.map(msg => {
+          // eslint-disable-next-line eqeqeq
+          if (msg.id == messageDeleteId) {
+            return {
+              ...msg,
+              images: [],
+              message: '',
+            };
+          }
+          return msg;
+        }),
+      );
+  }, [messageDeleteId]);
   const handleSendMsg = async (msg, images) => {
     var imagesUpload = [];
+    inputRef.current.setLoading(true);
     if (images?.length > 0) {
       var formdata = new FormData();
       images.map((image, index) => {
@@ -113,57 +147,111 @@ const ChatContainer = props => {
         data: formdata,
       });
     }
+    const res = await axios.post(sendMessageRoute, {
+      from: user._id,
+      to: currentChat._id,
+      message: msg,
+      images: msgImage,
+    });
     const msgImage = imagesUpload.data?.map((image, index) => image.id);
     socket.current.emit('send-msg', {
       to: currentChat._id,
       from: user._id,
       msg,
       images: msgImage,
-    });
-    await axios.post(sendMessageRoute, {
-      from: user._id,
-      to: currentChat._id,
-      message: msg,
-      images: msgImage,
+      id: res.data._id,
     });
     const msgs = [...messages];
-    msgs.push({fromSelf: true, message: msg, images: msgImage});
+    msgs.push({
+      fromSelf: true,
+      message: msg,
+      images: msgImage,
+      id: res.data._id,
+    });
     setMessages(msgs);
+    inputRef.current.setLoading(false);
     setTimeout(() => {
       refList?.current?.scrollToEnd();
     }, 500);
   };
-
+  const handleDeleteMsg = async id => {
+    try {
+      const newList = messages?.map((obj, index) => {
+        return obj.id === id
+          ? {
+              from: obj.from,
+              fromSelf: obj.fromSelf,
+              id: obj.id,
+              images: [],
+              message: '',
+            }
+          : obj;
+      });
+      socket.current.emit('delete-message', {
+        msgId: id,
+        to: currentChat._id,
+      });
+      await axios.delete(`${deleteMessageRoute}/${id}`);
+      setMessages(newList);
+      setShowDelete(false);
+    } catch (error) {
+      console.log('🚀 ~ file: ChatRoomContainer.js ~ line 147 ~ id', error);
+    }
+  };
   const renderItem = ({item, index}) => {
     return (
-      <View
-        style={{
-          ...styles.chatContainer,
-          flexDirection: !item.fromSelf ? 'row' : 'row-reverse',
-        }}>
-        <RenderAvatar user={item.fromSelf ? user : currentChat} />
+      <TouchableWithoutFeedback onLongPress={() => setShowDelete(!showDelete)}>
         <View
           style={{
-            ...styles.boubleText,
-            marginHorizontal: 10,
+            ...styles.chatContainer,
+            flexDirection: !item.fromSelf ? 'row' : 'row-reverse',
           }}>
-          <Text
+          <RenderAvatar user={item.fromSelf ? user : currentChat} />
+          <View
             style={{
-              color: 'white',
+              ...styles.boubleText,
+              marginHorizontal: 10,
             }}>
-            {item?.message}
-          </Text>
-          {item?.images && (
-            <FlatList
-              data={item?.images}
-              // eslint-disable-next-line no-shadow
-              renderItem={({item, index}) => {
-                return <ServerImage id={item} />;
-              }}
-            />
-          )}
+            {!item?.message && item?.images?.length === 0 ? (
+              <Text
+                style={{
+                  color: '#ffffff60',
+                }}>
+                (Message has been deleted)
+              </Text>
+            ) : (
+              <>
+                <Text
+                  style={{
+                    color: 'white',
+                  }}>
+                  {item?.message}
+                </Text>
+                {item?.images && (
+                  <FlatList
+                    data={item?.images}
+                    // eslint-disable-next-line no-shadow
+                    renderItem={({item, index}) => {
+                      return <ServerImage id={item} />;
+                    }}
+                  />
+                )}
+                {showDelete && item.fromSelf && (
+                  <TouchableOpacity
+                    onPress={() => handleDeleteMsg(item.id)}
+                    style={styles.deleteBtn}>
+                    <MaterialCommunityIcons
+                      name="delete-circle"
+                      color="#ffffff60"
+                      size={25}
+                    />
+                  </TouchableOpacity>
+                )}
+              </>
+            )}
+          </View>
         </View>
-      </View>
+      </TouchableWithoutFeedback>
     );
   };
 
@@ -196,7 +284,7 @@ const ChatContainer = props => {
           );
         }}
       />
-      <ChatInput handleSendMsg={handleSendMsg} />
+      <ChatInput ref={inputRef} handleSendMsg={handleSendMsg} />
     </View>
   );
 };
@@ -233,6 +321,13 @@ const styles = StyleSheet.create({
     width: (windowWidth - 90) / 2,
     height: (windowWidth - 90) / 2,
     marginVertical: 5,
+  },
+  deleteBtn: {
+    position: 'absolute',
+    bottom: -10,
+    left: -15,
+    zIndex: 9,
+    width: 25,
   },
 });
 

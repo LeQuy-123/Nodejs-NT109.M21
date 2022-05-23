@@ -1,5 +1,5 @@
 /* eslint-disable react-native/no-inline-styles */
-import React, {useEffect, useState, useRef} from 'react';
+import React, {useState, useRef} from 'react';
 import {
   FlatList,
   SafeAreaView,
@@ -80,7 +80,17 @@ const HomeScreen = ({route, navigation}) => {
             navigation.navigate(SCREEN_NAME.CHAT_SCREEN, {currentUser: item});
           }
         }}>
-        <RenderAvatar user={item} />
+        {item.roomName ? (
+          <View style={styles.avatar}>
+            <MaterialCommunityIcons
+              name={'account-group-outline'}
+              size={30}
+              color="#fff"
+            />
+          </View>
+        ) : (
+          <RenderAvatar user={item} />
+        )}
         <Text style={styles.textItem}>{item.username || item.roomName}</Text>
         <MaterialCommunityIcons
           name={item.roomName ? 'wechat' : 'chat'}
@@ -98,7 +108,7 @@ const HomeScreen = ({route, navigation}) => {
     const id = store.getState().authReducer.userInfo?._id;
     try {
       setModalVisible(false);
-      const response = await axios.post(createRoomRoute, {
+      await axios.post(createRoomRoute, {
         roomName: roomName.current,
         password: '123456',
         hostUser: id,
@@ -206,9 +216,9 @@ const styles = StyleSheet.create({
     paddingRight: 20,
   },
   avatar: {
-    width: 50,
-    height: 50,
-    backgroundColor: '#fff',
+    width: 55,
+    height: 55,
+    backgroundColor: '#ffffff30',
     borderRadius: 100,
     justifyContent: 'center',
     alignItems: 'center',

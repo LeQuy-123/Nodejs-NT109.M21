@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {forwardRef, useImperativeHandle, useState} from 'react';
 import {
   TextInput,
   Dimensions,
@@ -7,16 +7,18 @@ import {
   TouchableOpacity,
   FlatList,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import Feather from 'react-native-vector-icons/Feather';
 import ImagePickerModal from 'react-native-image-picker-modal';
 
 const windowWidth = Dimensions.get('window').width;
 
-const ChatInput = props => {
+const ChatInput = (props, ref) => {
   const [msg, setMsg] = useState('');
   const [images, setImages] = useState([]);
   const [isVisible, setVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const sendChat = () => {
     if (msg.length > 0 || images.length > 0) {
@@ -44,6 +46,9 @@ const ChatInput = props => {
       </>
     );
   };
+  useImperativeHandle(ref, () => ({
+    setLoading: x => setIsLoading(x),
+  }));
   return (
     <View style={styles.container}>
       <View style={styles.inputContainer}>
@@ -63,9 +68,14 @@ const ChatInput = props => {
           />
         )}
       </View>
-      <TouchableOpacity onPress={sendChat}>
-        <Feather name="send" size={30} color="white" />
-      </TouchableOpacity>
+      {isLoading ? (
+        <ActivityIndicator color="#ffffff80" />
+      ) : (
+        <TouchableOpacity onPress={sendChat}>
+          <Feather name="send" size={30} color="white" />
+        </TouchableOpacity>
+      )}
+
       <TouchableOpacity onPress={openPicker}>
         <Feather name="image" size={30} color="white" />
       </TouchableOpacity>
@@ -138,4 +148,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ChatInput;
+export default forwardRef(ChatInput);

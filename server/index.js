@@ -60,6 +60,7 @@ io.on("connection", (socket) => {
         to: data.to,
         msg: data.msg,
         images: data.images,
+        id: data.id,
       });
     }
   });
@@ -102,7 +103,14 @@ io.on("connection", (socket) => {
       userLeft: user,
     });
   });
-  socket.on('send-message-room', ({ from, to, msg, images }) => {
-    io.to(to).emit('message-room-recieve', { from, to, msg, images });
+  socket.on('send-message-room', ({ from, to, msg, images, id }) => {
+    io.to(to).emit('message-room-recieve', { from, to, msg, images, id });
+  });
+  socket.on('delete-message-room', ({to, msgId }) => {
+    io.to(to).emit('message-room-delete', { msgId });
+  });
+  socket.on('delete-message', ({ to, msgId }) => {
+    const sendUserSocket = onlineUsers.get(to);
+    io.to(sendUserSocket).emit('message-delete', { msgId });
   });
 });
