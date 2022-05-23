@@ -4,6 +4,7 @@ const User = require("../models/userModel");
 const { ObjectId } = require('mongodb');
 
 const bcrypt = require("bcrypt");
+const { deleteImageFunction } = require("./imageController");
 
 module.exports.getAllRoomMessages = async (req, res, next) => {
   try {
@@ -15,6 +16,7 @@ module.exports.getAllRoomMessages = async (req, res, next) => {
     const msgData = messages.map((msg) => {
       return {
         message: msg.message.text,
+        images: msg.message.images,
         from: msg.from,
         to: roomName,
         fromSelf: msg.from?._id.toString() === userId,
@@ -28,9 +30,9 @@ module.exports.getAllRoomMessages = async (req, res, next) => {
 
 module.exports.addRoomMessage = async (req, res, next) => {
   try {
-    const { from, to, message } = req.body;
+    const { from, to, message, images } = req.body;
     const data = await RoomMessage.create({
-      message: { text: message },
+      message: { text: message, images: images },
       from,
       to,
     });
@@ -106,6 +108,15 @@ module.exports.leaveRoom = async (req, res, next) => {
     if (roomNameCheck) {
       const filterUser = roomNameCheck.user.filter(user => user !== hostUser);
       if (filterUser.length === 0) {
+        const messages = await RoomMessage.find({
+          roomName
+        });
+        //also delete all the images in the room
+        messages.forEach(async (msg) => {
+          if (msg.message.images) {
+            await deleteImageFunction(msg.message.images);
+          }
+        });
         await Room.deleteOne({ roomName });
         await RoomMessage.deleteMany({ roomName });
         return res.json({ status: true, msg: 'last user leaver so the room will be delete' });

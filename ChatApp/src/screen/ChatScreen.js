@@ -71,15 +71,25 @@ const ChatScreen = ({route, navigation}) => {
     <>
       <SafeAreaView style={styles.container}>
         <View style={styles.headerList}>
-          <Text style={styles.name}>{currentUser?.username}</Text>
           <TouchableOpacity
-            style={styles.logOutButton}
-            onPress={() => setMenuVisble(true)}>
+            style={styles.modalBtn}
+            onPress={() => navigation.goBack()}>
             <MaterialCommunityIcons
-              name={!menuVisble ? 'menu-up' : 'menu-down'}
-              size={30}
+              name="backspace-outline"
+              size={28}
               color="#fff"
             />
+          </TouchableOpacity>
+          <Text style={styles.name}>{currentUser?.username}</Text>
+          <TouchableOpacity
+            onPress={() => {
+              setMenuVisble(false);
+              navigation.navigate(SCREEN_NAME.MEDIA_SCREEN, {currentUser});
+            }}
+            style={{
+              ...styles.modalBtn,
+            }}>
+            <MaterialCommunityIcons name="image" size={28} color="#fff" />
           </TouchableOpacity>
         </View>
         <KeyboardAvoidingView
@@ -92,38 +102,6 @@ const ChatScreen = ({route, navigation}) => {
             <Image source={IMAGE.loader} style={styles.loader} />
           )}
         </KeyboardAvoidingView>
-        <Modal
-          backdropOpacity={0}
-          onBackdropPress={() => setMenuVisble(false)}
-          animationIn="slideInDown"
-          animationOut="slideOutUp"
-          isVisible={menuVisble}>
-          <View style={styles.modalContainer}>
-            <TouchableOpacity
-              onPress={() => {
-                setMenuVisble(false);
-                navigation.navigate(SCREEN_NAME.MEDIA_SCREEN, {currentUser});
-              }}
-              style={{
-                ...styles.modalBtn,
-                borderBottomWidth: 1,
-                borderBottomColor: '#ffffff90',
-              }}>
-              <Text style={styles.textBtn}>Media</Text>
-              <MaterialCommunityIcons name="image" size={17} color="#fff" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.modalBtn}
-              onPress={() => navigation.goBack()}>
-              <Text style={styles.textBtn}>Go Back</Text>
-              <MaterialCommunityIcons
-                name="backspace-reverse-outline"
-                size={17}
-                color="#fff"
-              />
-            </TouchableOpacity>
-          </View>
-        </Modal>
       </SafeAreaView>
     </>
   );
@@ -152,9 +130,9 @@ const styles = StyleSheet.create({
     marginBottom: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingRight: 20,
+    justifyContent: 'space-between',
     height: 50,
+    paddingHorizontal: 10,
   },
   logOutButton: {
     position: 'absolute',
@@ -177,12 +155,9 @@ const styles = StyleSheet.create({
     borderRadius: 7,
   },
   modalBtn: {
-    width: 160,
-    height: 45,
     justifyContent: 'space-between',
     alignItems: 'center',
     flexDirection: 'row',
-    paddingHorizontal: 10,
   },
   textBtn: {
     color: 'white',

@@ -48,7 +48,7 @@ module.exports.getAllImageInChat = async (req, res, next) => {
       users: {
         $all: [from, to],
       },
-    }).sort({ updatedAt: 1 });
+    }).sort({ updatedAt: -1 });
     const images = [];
     messages.forEach(message => {
       if (message?.message?.images && message?.message?.images.length > 0) {

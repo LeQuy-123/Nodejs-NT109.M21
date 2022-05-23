@@ -85,3 +85,19 @@ module.exports.deleteImage = async (req, res, next) => {
   }
 };
 
+module.exports.deleteImageFunction = async (id) => {
+  try {
+    if (!id || id === 'undefined') return res.status(400).send('no image id');
+    // if there is an id string, cast it to mongoose's objectId type
+    id?.forEach(element => {
+      const _id = new ObjectId(element);
+      gfs.delete(_id).then(files => {
+      }).catch((err) => {
+      });
+    });
+    return 'delete sucsess';
+  } catch (ex) {
+    return ex;
+  }
+};
+

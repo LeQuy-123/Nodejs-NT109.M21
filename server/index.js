@@ -102,7 +102,7 @@ io.on("connection", (socket) => {
       userLeft: user,
     });
   });
-  socket.on('send-message-room', ({ from, to, msg }) => {
-    io.to(to).emit('message-room-recieve', { from, to, msg });
+  socket.on('send-message-room', ({ from, to, msg, images }) => {
+    io.to(to).emit('message-room-recieve', { from, to, msg, images });
   });
 });

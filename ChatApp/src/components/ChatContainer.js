@@ -156,6 +156,7 @@ const ChatContainer = props => {
           {item?.images && (
             <FlatList
               data={item?.images}
+              // eslint-disable-next-line no-shadow
               renderItem={({item, index}) => {
                 return <ServerImage id={item} />;
               }}

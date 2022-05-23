@@ -14,15 +14,18 @@ import {
   RefreshControl,
 } from 'react-native';
 import {useDispatch} from 'react-redux';
-import {createRoom, getContacts, getRoomHaveUser, logout} from '../redux/thunk';
+import {getContacts, getRoomHaveUser, logout} from '../redux/thunk';
 import WelcomeComponent from '../components/WelcomeComponent';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {useFocusEffect} from '@react-navigation/native';
 import axios from 'axios';
 import {store} from '../redux/store';
-
 import {SCREEN_NAME} from '../navigation/screen';
-import {getRoomHaveUserRoute, allUsersRoute} from '../utils/APIRoutes';
+import {
+  getRoomHaveUserRoute,
+  allUsersRoute,
+  createRoomRoute,
+} from '../utils/APIRoutes';
 import RenderAvatar from '../components/RenderAvatar';
 const windowWidth = Dimensions.get('window').width;
 
@@ -91,21 +94,24 @@ const HomeScreen = ({route, navigation}) => {
   const [modalVisible, setModalVisible] = useState(false);
   const roomName = useRef();
 
-  const handleCreateRoom = () => {
-    dispatch(createRoom({roomName: roomName.current, password: '123456'}))
-      .unwrap()
-      .then(originalPromiseResult => {
-        setModalVisible(false);
-        navigation.navigate(SCREEN_NAME.CHAT_ROOM_SCREEN, {
-          roomName: roomName.current,
-        });
-      })
-      .catch(rejectedValueOrSerializedError => {
-        console.log(
-          '🚀 ~ file: HomeScreen.js ~ line 19 ~ useEffect ~ rejectedValueOrSerializedError',
-          rejectedValueOrSerializedError,
-        );
+  const handleCreateRoom = async () => {
+    const id = store.getState().authReducer.userInfo?._id;
+    try {
+      setModalVisible(false);
+      const response = await axios.post(createRoomRoute, {
+        roomName: roomName.current,
+        password: '123456',
+        hostUser: id,
       });
+      navigation.navigate(SCREEN_NAME.CHAT_ROOM_SCREEN, {
+        roomName: roomName.current,
+      });
+    } catch (error) {
+      console.log(
+        '🚀 ~ file: HomeScreen.js ~ line 40 ~ fetchData ~ error',
+        error,
+      );
+    }
   };
   const [refreshing, setRefreshing] = React.useState(false);
 

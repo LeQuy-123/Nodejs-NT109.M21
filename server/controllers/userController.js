@@ -58,7 +58,6 @@ module.exports.setAvatar = async (req, res, next) => {
   try {
     const userId = req.params.id;
     const {avatarImage, isCustomAvatar} = req.body;
-    console.log("🚀 ~ file: userController.js ~ line 60 ~ module.exports.setAvatar= ~ req.body", req.body)
     const userData = await User.findByIdAndUpdate(
       userId,
       {

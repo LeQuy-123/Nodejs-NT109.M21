@@ -6,7 +6,7 @@ import {
   View,
   Dimensions,
   Text,
-  FlatList,
+  ScrollView,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import axios from 'axios';
@@ -17,10 +17,6 @@ import {ServerImage} from '../components/RenderAvatar';
 const MediaScreen = ({route, navigation}) => {
   const {currentUser} = route.params;
   const [listImages, setListImages] = useState([]);
-  console.log(
-    '🚀 ~ file: MediaScreen.js ~ line 18 ~ MediaScreen ~ listImages',
-    listImages,
-  );
   const userInfo = useSelector(state => state.authReducer.userInfo);
 
   useEffect(() => {
@@ -40,25 +36,29 @@ const MediaScreen = ({route, navigation}) => {
     };
     fetchData();
   }, [currentUser, userInfo]);
-  const renderItem = ({item}) => {
-    return <ServerImage style={styles.image} id={item} />;
-  };
   return (
     <>
       <SafeAreaView style={styles.container}>
         <View style={styles.headerList}>
-          <Text style={styles.name}>{currentUser?.username}</Text>
           <TouchableOpacity
             style={styles.logOutButton}
             onPress={() => navigation.goBack()}>
             <MaterialCommunityIcons
-              name="backspace-reverse-outline"
-              size={30}
+              name="backspace-outline"
+              size={28}
               color="#fff"
             />
           </TouchableOpacity>
+          <Text style={styles.name}>{currentUser?.username}</Text>
         </View>
-        <FlatList numColumns={3} data={listImages} renderItem={renderItem} />
+        <ScrollView
+          // eslint-disable-next-line react-native/no-inline-styles
+          contentContainerStyle={{flexDirection: 'row', flexWrap: 'wrap'}}>
+          {listImages.length > 0 &&
+            listImages.map(item => (
+              <ServerImage key={item} style={styles.image} id={item} />
+            ))}
+        </ScrollView>
       </SafeAreaView>
     </>
   );
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
   },
   logOutButton: {
     position: 'absolute',
-    right: 15,
+    left: 10,
   },
   image: {
     width: (windowWidth - 30) / 3,
