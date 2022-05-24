@@ -1,6 +1,6 @@
 /* eslint-disable react-native/no-inline-styles */
 import axios from 'axios';
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useCallback, useRef, useState} from 'react';
 import {
   View,
   Image,
@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
 } from 'react-native';
-import {useSelector, useDispatch} from 'react-redux';
+import {useSelector} from 'react-redux';
 import ChatInput from '../components/ChatInput';
 import {store} from '../redux/store';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -40,6 +40,10 @@ const ChatContainer = props => {
   const {socket, currentChat} = props;
   const refList = useRef();
   const inputRef = useRef();
+  const pageRef = useRef({
+    page: 0,
+    numberOfNewMessager: 0,
+  });
 
   const [arrivalMessage, setArrivalMessage] = useState(null);
   const [userIsTyping, setUserTyping] = useState(false);
@@ -47,30 +51,37 @@ const ChatContainer = props => {
   const [messageDeleteId, setMessageDeleteId] = useState();
 
   const [messages, setMessages] = useState([]);
+  console.log('messages', messages);
   const user = useSelector(state => state.authReducer.userInfo);
-  const dispatch = useDispatch();
 
-  useEffect(() => {
-    const fetchData = async () => {
+  const fetchData = useCallback(
+    async page => {
       try {
         const id = store.getState().authReducer.userInfo?._id;
-        const response = await axios.post(recieveMessageRoute, {
-          from: id,
-          to: currentChat._id,
-        });
-        setMessages(response.data);
-        setTimeout(() => {
-          refList?.current?.scrollToEnd();
-        }, 500);
+        const response = await axios.post(
+          `${recieveMessageRoute}?size=10&page=${page}&numberOfNewMessager=${pageRef.current.numberOfNewMessager}`,
+          {
+            from: id,
+            to: currentChat._id,
+          },
+        );
+        if (response.data.length > 0) {
+          pageRef.current.page = page + 1;
+          setMessages(prev => [...prev, ...response.data]);
+        }
       } catch (error) {
         console.log(
           '🚀 ~ file: ChatContainer.js ~ line 59 ~ fetchData ~ error',
           error,
         );
       }
-    };
-    fetchData();
-  }, [dispatch, currentChat, user, socket]);
+    },
+    [currentChat],
+  );
+
+  useEffect(() => {
+    fetchData(pageRef.current.page);
+  }, [fetchData]);
 
   useEffect(() => {
     if (socket.current) {
@@ -161,18 +172,17 @@ const ChatContainer = props => {
       images: msgImage,
       id: res.data._id,
     });
-    const msgs = [...messages];
-    msgs.push({
-      fromSelf: true,
-      message: msg,
-      images: msgImage,
-      id: res.data._id,
-    });
-    setMessages(msgs);
+    setMessages(prev => [
+      {
+        fromSelf: true,
+        message: msg,
+        images: msgImage || [],
+        id: res.data._id,
+      },
+      ...prev,
+    ]);
+    pageRef.current.numberOfNewMessager++;
     inputRef.current.setLoading(false);
-    setTimeout(() => {
-      refList?.current?.scrollToEnd();
-    }, 500);
   };
   const handleDeleteMsg = async id => {
     try {
@@ -260,6 +270,12 @@ const ChatContainer = props => {
       <FlatList
         ref={refList}
         data={messages}
+        inverted
+        onEndReached={({distanceFromEnd}) => {
+          console.log('onTopReached----------=============----------');
+          fetchData(pageRef.current.page);
+        }}
+        onEndReachedThreshold={0}
         renderItem={renderItem}
         ListFooterComponent={() => {
           if (!userIsTyping) {
