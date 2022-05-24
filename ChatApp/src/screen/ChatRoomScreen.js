@@ -19,6 +19,7 @@ import {IMAGE} from '../assets';
 import {Root, Popup} from 'react-native-popup-confirm-toast';
 import UserList from '../components/UserList';
 import axios from 'axios';
+import {SCREEN_NAME} from '../navigation/screen';
 
 const ChatRoomScreen = ({route, navigation}) => {
   const {roomName} = route.params;
@@ -82,13 +83,22 @@ const ChatRoomScreen = ({route, navigation}) => {
     <Root>
       <SafeAreaView style={styles.container}>
         <View style={styles.headerList}>
-          <Text style={styles.name}>{roomName}</Text>
-          <TouchableOpacity style={styles.logOutButton} onPress={onLeave}>
+          <TouchableOpacity style={styles.modalBtn} onPress={onLeave}>
             <MaterialCommunityIcons
-              name="backspace-reverse"
-              size={30}
+              name="backspace-outline"
+              size={28}
               color="#fff"
             />
+          </TouchableOpacity>
+          <Text style={styles.name}>{roomName}</Text>
+          <TouchableOpacity
+            onPress={() => {
+              navigation.navigate(SCREEN_NAME.MEDIA_SCREEN, {roomName});
+            }}
+            style={{
+              ...styles.modalBtn,
+            }}>
+            <MaterialCommunityIcons name="image" size={28} color="#fff" />
           </TouchableOpacity>
         </View>
         <UserList socket={socket} roomName={roomName} />
@@ -134,9 +144,9 @@ const styles = StyleSheet.create({
     marginBottom: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingRight: 20,
+    justifyContent: 'space-between',
     height: 50,
+    paddingHorizontal: 10,
   },
   logOutButton: {
     position: 'absolute',

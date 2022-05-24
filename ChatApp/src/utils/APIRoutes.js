@@ -16,6 +16,8 @@ export const addRoomMessageRoute = `${host}/api/room/addmsg`;
 export const deleteRoomMessageRoute = `${host}/api/room/deleteMsg`;
 
 export const getAllRoomMessageRoute = `${host}/api/room/getmsg`;
+export const getAllRoomImagesRoute = `${host}/api/room/getAllRoomImages`;
+
 export const getRoomUsersRoute = `${host}/api/room/getAllUserInRoom`;
 export const getRoomHaveUserRoute = `${host}/api/room/getRoomHaveUser`;
 

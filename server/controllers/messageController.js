@@ -6,13 +6,11 @@ module.exports.getMessages = async (req, res, next) => {
     const { from, to } = req.body;
     const { page = 0, size = 10, numberOfNewMessager = 0 } = req.query;
     const skip = parseInt(page) * parseInt(size) + parseInt(numberOfNewMessager);
-    console.log('page', page, 'size', size, 'numberOfNewMessager', skip);
     const messages = await Messages.find({
       users: {
         $all: [from, to],
       },
     }).sort({ createdAt: -1 }).skip(skip).limit(size);
-    console.log('messages', messages);
     const projectedMessages = messages.map((msg) => {
       return {
         fromSelf: msg.sender.toString() === from,

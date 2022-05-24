@@ -10,23 +10,31 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import axios from 'axios';
-import {getImagesInChatRoute} from '../utils/APIRoutes';
+import {getAllRoomImagesRoute, getImagesInChatRoute} from '../utils/APIRoutes';
 import {useSelector} from 'react-redux';
 import {ServerImage} from '../components/RenderAvatar';
 
 const MediaScreen = ({route, navigation}) => {
-  const {currentUser} = route.params;
+  const {currentUser, roomName} = route.params;
   const [listImages, setListImages] = useState([]);
   const userInfo = useSelector(state => state.authReducer.userInfo);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axios.post(getImagesInChatRoute, {
-          from: userInfo._id,
-          to: currentUser._id,
-        });
-        setListImages(res.data);
+        if (currentUser?._id && userInfo?._id) {
+          const res = await axios.post(getImagesInChatRoute, {
+            from: userInfo._id,
+            to: currentUser._id,
+          });
+          setListImages(res.data);
+        }
+        if (roomName) {
+          const res = await axios.post(getAllRoomImagesRoute, {
+            roomName,
+          });
+          setListImages(res.data);
+        }
       } catch (error) {
         console.log(
           '🚀 ~ file: MediaScreen.js ~ line 29 ~ fetchData ~ error',
@@ -35,7 +43,7 @@ const MediaScreen = ({route, navigation}) => {
       }
     };
     fetchData();
-  }, [currentUser, userInfo]);
+  }, [currentUser, userInfo, roomName]);
   return (
     <>
       <SafeAreaView style={styles.container}>
@@ -49,7 +57,7 @@ const MediaScreen = ({route, navigation}) => {
               color="#fff"
             />
           </TouchableOpacity>
-          <Text style={styles.name}>{currentUser?.username}</Text>
+          <Text style={styles.name}>{currentUser?.username || roomName}</Text>
         </View>
         <ScrollView
           // eslint-disable-next-line react-native/no-inline-styles

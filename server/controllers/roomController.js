@@ -9,10 +9,11 @@ const { deleteImageFunction } = require("./imageController");
 module.exports.getAllRoomMessages = async (req, res, next) => {
   try {
     const { roomName, userId } = req.body;
-
+    const { page = 0, size = 10, numberOfNewMessager = 0 } = req.query;
+    const skip = parseInt(page) * parseInt(size) + parseInt(numberOfNewMessager);
     const messages = await RoomMessage.find({
       roomName
-    }).sort({ createdAt: 1 });
+    }).sort({ createdAt: -1 }).skip(skip).limit(size);
     const msgData = messages.map((msg) => {
       return {
         message: msg.message.text,
@@ -28,6 +29,25 @@ module.exports.getAllRoomMessages = async (req, res, next) => {
     next(ex);
   }
 };
+
+module.exports.getAllRoomImage = async (req, res, next) => {
+  try {
+    const { roomName } = req.body;
+    const messages = await RoomMessage.find({
+      roomName
+    }).sort({ createdAt: -1 });
+    const images = [];
+    messages.forEach(message => {
+      if (message?.message?.images && message?.message?.images.length > 0) {
+        images.push(...message.message.images);
+      }
+    });
+    return res.json(images);
+  } catch (ex) {
+    next(ex);
+  }
+};
+
 
 module.exports.addRoomMessage = async (req, res, next) => {
   try {

@@ -51,7 +51,6 @@ const ChatContainer = props => {
   const [messageDeleteId, setMessageDeleteId] = useState();
 
   const [messages, setMessages] = useState([]);
-  console.log('messages', messages);
   const user = useSelector(state => state.authReducer.userInfo);
 
   const fetchData = useCallback(
@@ -91,26 +90,18 @@ const ChatContainer = props => {
             fromSelf: false,
             message: data.msg,
             images: data.images,
+            id: data.id,
           });
-          setTimeout(() => {
-            refList?.current?.scrollToEnd();
-          }, 100);
         }
       });
       socket.current.on('user_is_typing', msg => {
         if (msg === currentChat._id) {
           setUserTyping(true);
-          setTimeout(() => {
-            refList?.current?.scrollToEnd();
-          }, 100);
         }
       });
       socket.current.on('user_stop_typing', msg => {
         if (msg === currentChat._id) {
           setUserTyping(false);
-          setTimeout(() => {
-            refList?.current?.scrollToEnd();
-          }, 100);
         }
       });
       socket.current.on('message-delete', data => {
@@ -119,7 +110,8 @@ const ChatContainer = props => {
     }
   }, [socket, user, currentChat]);
   useEffect(() => {
-    arrivalMessage && setMessages(prev => [...prev, arrivalMessage]);
+    arrivalMessage && setMessages(prev => [arrivalMessage, ...prev]);
+    pageRef.current.numberOfNewMessager++;
   }, [arrivalMessage]);
   useEffect(() => {
     messageDeleteId &&
@@ -272,12 +264,11 @@ const ChatContainer = props => {
         data={messages}
         inverted
         onEndReached={({distanceFromEnd}) => {
-          console.log('onTopReached----------=============----------');
           fetchData(pageRef.current.page);
         }}
         onEndReachedThreshold={0}
         renderItem={renderItem}
-        ListFooterComponent={() => {
+        ListHeaderComponent={() => {
           if (!userIsTyping) {
             return null;
           }

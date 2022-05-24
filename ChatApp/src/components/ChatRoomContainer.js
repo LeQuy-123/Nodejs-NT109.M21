@@ -1,6 +1,6 @@
 /* eslint-disable react-native/no-inline-styles */
 import axios from 'axios';
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useCallback, useRef, useState} from 'react';
 import {
   View,
   Image,
@@ -40,7 +40,10 @@ const ChatRoomContainer = props => {
   const {socket, currentChat, roomName} = props;
   const refList = useRef();
   const inputRef = useRef();
-  const [arrivalMessage, setArrivalMessage] = useState(null);
+  const pageRef = useRef({
+    page: 0,
+    numberOfNewMessager: 0,
+  });
   const [messageDeleteId, setMessageDeleteId] = useState();
   const [showDelete, setShowDelete] = useState(false);
   const [messages, setMessages] = useState([]);
@@ -70,28 +73,26 @@ const ChatRoomContainer = props => {
       socket.current.on(
         'message-room-recieve',
         ({from, to, msg, images, id}) => {
-          setArrivalMessage({
-            fromSelf: from._id === user._id,
-            message: msg,
-            from,
-            to,
-            images,
-            id: id,
-          });
-          setTimeout(() => {
-            refList?.current?.scrollToEnd();
-          }, 100);
+          pageRef.current.numberOfNewMessager++;
+          setMessages(prev => [
+            {
+              fromSelf: from._id === user._id,
+              message: msg,
+              from,
+              to,
+              images,
+              id: id,
+            },
+            ...prev,
+          ]);
         },
       );
       socket.current.on('message-room-delete', ({msgId}) => {
         setMessageDeleteId(msgId);
       });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [socket, user, currentChat]);
-  useEffect(() => {
-    arrivalMessage && setMessages(prev => [...prev, arrivalMessage]);
-  }, [arrivalMessage]);
+
   useEffect(() => {
     messageDeleteId &&
       setMessages(prev =>
@@ -108,22 +109,30 @@ const ChatRoomContainer = props => {
         }),
       );
   }, [messageDeleteId]);
-  useEffect(() => {
-    const fetchData = async () => {
+
+  const fetchData = useCallback(
+    async page => {
       try {
         const id = store.getState().authReducer.userInfo?._id;
-        const response = await axios.post(getAllRoomMessageRoute, {
-          roomName,
-          userId: id,
-        });
-        setMessages(response.data);
-        setTimeout(() => {
-          refList?.current?.scrollToEnd();
-        }, 500);
+        const response = await axios.post(
+          `${getAllRoomMessageRoute}?size=10&page=${page}&numberOfNewMessager=${pageRef.current.numberOfNewMessager}`,
+          {
+            roomName,
+            userId: id,
+          },
+        );
+        if (response.data.length > 0) {
+          pageRef.current.page = page + 1;
+          setMessages(prev => [...prev, ...response.data]);
+        }
       } catch (error) {}
-    };
-    fetchData();
-  }, [roomName]);
+    },
+    [roomName],
+  );
+
+  useEffect(() => {
+    fetchData(pageRef.current.page);
+  }, [fetchData]);
   const handleSendMsg = async (msg, images) => {
     inputRef.current.setLoading(true);
     var imagesUpload = [];
@@ -160,13 +169,11 @@ const ChatRoomContainer = props => {
       to: roomName,
       from: user,
       msg,
-      images: msgImage,
+      images: msgImage || [],
       id: res?.data._id,
     });
+    pageRef.current.numberOfNewMessager++;
     inputRef.current.setLoading(false);
-    setTimeout(() => {
-      refList?.current?.scrollToEnd();
-    }, 500);
   };
   const handleDeleteMsg = async id => {
     try {
@@ -254,6 +261,11 @@ const ChatRoomContainer = props => {
         ref={refList}
         data={messages}
         renderItem={renderItem}
+        inverted
+        onEndReached={({distanceFromEnd}) => {
+          fetchData(pageRef.current.page);
+        }}
+        onEndReachedThreshold={0}
         keyExtractor={(item, index) => {
           return item.id;
         }}
