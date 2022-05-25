@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 const windowWidth = Dimensions.get('window').width;
 import {useDispatch} from 'react-redux';
@@ -47,7 +48,10 @@ const SetAvatarScreen = ({route, navigation}) => {
         if (customAvatar.isCustom) {
           var formdata = new FormData();
           formdata.append('images', {
-            uri: customAvatar.path,
+            uri:
+              Platform.OS === 'ios'
+                ? customAvatar.path.replace('file://', '')
+                : customAvatar.path,
             type: 'image/jpeg',
             name: 'customAvatar.jpg',
           });

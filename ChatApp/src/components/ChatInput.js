@@ -1,3 +1,4 @@
+/* eslint-disable react-native/no-inline-styles */
 import React, {forwardRef, useImperativeHandle, useState} from 'react';
 import {
   TextInput,
@@ -8,16 +9,21 @@ import {
   FlatList,
   Image,
   ActivityIndicator,
+  Text,
 } from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import Feather from 'react-native-vector-icons/Feather';
-import ImagePickerModal from 'react-native-image-picker-modal';
+import ImagePicker from 'react-native-image-crop-picker';
+import {SPSheet, Root} from 'react-native-popup-confirm-toast';
+const spSheet = SPSheet;
 
 const windowWidth = Dimensions.get('window').width;
-
+const option = {
+  multiple: true,
+};
 const ChatInput = (props, ref) => {
   const [msg, setMsg] = useState('');
   const [images, setImages] = useState([]);
-  const [isVisible, setVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const sendChat = () => {
@@ -28,16 +34,13 @@ const ChatInput = (props, ref) => {
     }
   };
   const removeImage = item => {
-    const newImages = images.filter(image => image.id !== item.id);
+    const newImages = images.filter(image => image.path !== item.path);
     setImages(newImages);
-  };
-  const openPicker = () => {
-    setVisible(true);
   };
   const renderImage = ({item}) => {
     return (
       <>
-        <Image style={styles.images} source={{uri: item?.uri}} />
+        <Image style={styles.images} source={{uri: item?.path}} />
         <TouchableOpacity
           style={styles.closeIcon}
           onPress={() => removeImage(item)}>
@@ -49,52 +52,98 @@ const ChatInput = (props, ref) => {
   useImperativeHandle(ref, () => ({
     setLoading: x => setIsLoading(x),
   }));
-  return (
-    <View style={styles.container}>
-      <View style={styles.inputContainer}>
-        <TextInput
-          placeholder="type your message here"
-          value={msg}
-          style={styles.input}
-          placeholderTextColor="rgb(169,169,169)"
-          onChangeText={text => setMsg(text)}
-        />
-        {images && images?.length > 0 && (
-          <FlatList
-            style={styles.list}
-            horizontal
-            data={images}
-            renderItem={renderImage}
-          />
-        )}
-      </View>
-      {isLoading ? (
-        <ActivityIndicator color="#ffffff80" />
-      ) : (
-        <TouchableOpacity onPress={sendChat}>
-          <Feather name="send" size={30} color="white" />
+  const openBottomSheet = () => {
+    spSheet.show({
+      component: () => component({spSheet}),
+      dragFromTopOnly: true,
+    });
+  };
+  const openCamera = () => {
+    spSheet.hide();
+    ImagePicker.openCamera(option)
+      .then(res => {
+        console.log(res);
+        setImages(prevState => [...prevState, res]);
+      })
+      .catch(err => {
+        console.log(
+          '🚀 ~ file: AvatarPicker.js ~ line 25 ~ ImagePicker.openCamera ~ err',
+          err,
+        );
+      });
+  };
+  const openGallery = () => {
+    spSheet.hide();
+    ImagePicker.openPicker(option)
+      .then(res => {
+        setImages(prevState => [...prevState, ...res]);
+      })
+      .catch(err => {
+        console.log(
+          '🚀 ~ file: AvatarPicker.js ~ line 25 ~ ImagePicker.openGallery ~ err',
+          err,
+        );
+      });
+  };
+  const component = () => {
+    return (
+      <View style={styles.bottomSheet}>
+        <TouchableOpacity
+          onPress={openGallery}
+          style={{
+            ...styles.buttonOption,
+            borderColor: '#00000080',
+            borderBottomWidth: 1,
+          }}>
+          <Text style={styles.btnText}>Gallery</Text>
+          <MaterialCommunityIcons name="library-shelves" size={27} />
         </TouchableOpacity>
-      )}
+        <TouchableOpacity
+          onPress={openCamera}
+          style={{
+            ...styles.buttonOption,
+            borderBottomColor: '#00000080',
+            borderBottomWidth: 1,
+          }}>
+          <Text style={styles.btnText}>Camera</Text>
+          <MaterialCommunityIcons name="camera-outline" size={27} />
+        </TouchableOpacity>
+      </View>
+    );
+  };
+  return (
+    <Root>
+      <View style={styles.container}>
+        <View style={styles.inputContainer}>
+          <TextInput
+            placeholder="type your message here"
+            value={msg}
+            style={styles.input}
+            placeholderTextColor="rgb(169,169,169)"
+            onChangeText={text => setMsg(text)}
+          />
+          {images && images?.length > 0 && (
+            <FlatList
+              style={styles.list}
+              horizontal
+              data={images}
+              renderItem={renderImage}
+            />
+          )}
+        </View>
+        {isLoading ? (
+          <ActivityIndicator color="#ffffff80" />
+        ) : (
+          <TouchableOpacity onPress={sendChat}>
+            <Feather name="send" size={30} color="white" />
+          </TouchableOpacity>
+        )}
 
-      <TouchableOpacity onPress={openPicker}>
-        <Feather name="image" size={30} color="white" />
-      </TouchableOpacity>
-      <ImagePickerModal
-        title="You can either take a picture or select one from your album."
-        data={['Take a photo', 'Select from the library']}
-        isVisible={isVisible}
-        onCancelPress={() => {
-          setVisible(false);
-        }}
-        onBackdropPress={() => {
-          setVisible(false);
-        }}
-        onPress={item => {
-          setVisible(false);
-          setImages(prevState => [...prevState, ...item?.assets]);
-        }}
-      />
-    </View>
+        <TouchableOpacity onPress={openBottomSheet}>
+          <Feather name="image" size={30} color="white" />
+        </TouchableOpacity>
+      </View>
+    </Root>
   );
 };
 
@@ -137,6 +186,8 @@ const styles = StyleSheet.create({
   input: {
     fontSize: 16,
     color: 'white',
+    margin: 0,
+    padding: 0,
   },
   sectionDescription: {
     marginTop: 8,
@@ -145,6 +196,30 @@ const styles = StyleSheet.create({
   },
   highlight: {
     fontWeight: '700',
+  },
+  bottomSheet: {
+    alignItems: 'center',
+    justifyContent: 'space-around',
+  },
+  btnText: {
+    fontSize: 17,
+  },
+  buttonOption: {
+    width: windowWidth - 40,
+    alignItems: 'center',
+    flexDirection: 'row',
+    paddingVertical: 10,
+    borderRadius: 5,
+    justifyContent: 'space-between',
+    paddingHorizontal: 10,
+  },
+  avatarButton: {
+    width: 100,
+    height: 100,
+    borderRadius: 75,
+    backgroundColor: 'white',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 

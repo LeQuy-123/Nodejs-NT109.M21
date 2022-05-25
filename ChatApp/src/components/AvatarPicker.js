@@ -1,5 +1,5 @@
 /* eslint-disable react-native/no-inline-styles */
-import React, {useState, useImperativeHandle, useEffect} from 'react';
+import React from 'react';
 import {
   View,
   StyleSheet,

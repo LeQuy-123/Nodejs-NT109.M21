@@ -10,6 +10,7 @@ import {
   Text,
   TouchableOpacity,
   TouchableWithoutFeedback,
+  Platform,
 } from 'react-native';
 import {useSelector} from 'react-redux';
 import ChatInput from '../components/ChatInput';
@@ -130,51 +131,72 @@ const ChatContainer = props => {
       );
   }, [messageDeleteId]);
   const handleSendMsg = async (msg, images) => {
-    var imagesUpload = [];
-    inputRef.current.setLoading(true);
-    if (images?.length > 0) {
-      var formdata = new FormData();
-      images.map((image, index) => {
-        formdata.append('images', {
-          uri: image.uri,
-          type: image.type,
-          name: image.fileName,
+    try {
+      var imagesUpload = [];
+      inputRef.current.setLoading(true);
+      if (images?.length > 0) {
+        var formdata = new FormData();
+        images.map((image, index) => {
+          formdata.append('images', {
+            uri:
+              Platform.OS === 'ios'
+                ? image.path.replace('file://', '')
+                : image.path,
+            type: 'image/jpeg',
+            name: image.path.split('/').pop(),
+          });
         });
-      });
-      imagesUpload = await axios({
-        method: 'post',
-        url: uploadMultipeImageRoute,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-        data: formdata,
-      });
-    }
-    const res = await axios.post(sendMessageRoute, {
-      from: user._id,
-      to: currentChat._id,
-      message: msg,
-      images: msgImage,
-    });
-    const msgImage = imagesUpload.data?.map((image, index) => image.id);
-    socket.current.emit('send-msg', {
-      to: currentChat._id,
-      from: user._id,
-      msg,
-      images: msgImage,
-      id: res.data._id,
-    });
-    setMessages(prev => [
-      {
-        fromSelf: true,
+        try {
+          imagesUpload = await axios({
+            method: 'post',
+            url: uploadMultipeImageRoute,
+            headers: {
+              Accept: 'application/json',
+              'Content-Type': 'multipart/form-data',
+            },
+            data: formdata,
+          });
+        } catch (err) {
+          console.log(
+            '🚀 ~ file: ChatContainer.js ~ line 139 ~ handleSendMsg ~ err',
+            err,
+          );
+        }
+      }
+      const msgImage = imagesUpload.data?.map((image, index) => image.id);
+      const res = await axios.post(sendMessageRoute, {
+        from: user._id,
+        to: currentChat._id,
         message: msg,
         images: msgImage || [],
+      });
+      socket.current.emit('send-msg', {
+        to: currentChat._id,
+        from: user._id,
+        msg,
+        images: msgImage || [],
         id: res.data._id,
-      },
-      ...prev,
-    ]);
-    pageRef.current.numberOfNewMessager++;
-    inputRef.current.setLoading(false);
+      });
+      setMessages(prev => [
+        {
+          fromSelf: true,
+          message: msg,
+          images: msgImage || [],
+          id: res.data._id,
+        },
+        ...prev,
+      ]);
+      pageRef.current.numberOfNewMessager++;
+      inputRef.current.setLoading(false);
+    } catch {
+      inputRef.current.setLoading(false);
+      error => {
+        console.log(
+          '🚀 ~ file: ChatContainer.js ~ line 149 ~ handleSendMsg ~ error',
+          error,
+        );
+      };
+    }
   };
   const handleDeleteMsg = async id => {
     try {
@@ -264,9 +286,13 @@ const ChatContainer = props => {
         data={messages}
         inverted
         onEndReached={({distanceFromEnd}) => {
+          console.log(
+            '🚀 ~ file: ChatContainer.js ~ line 181 ~ onEndReached ~ distanceFromEnd',
+            distanceFromEnd,
+          );
           fetchData(pageRef.current.page);
         }}
-        onEndReachedThreshold={0}
+        onEndReachedThreshold={0.5}
         renderItem={renderItem}
         ListHeaderComponent={() => {
           if (!userIsTyping) {

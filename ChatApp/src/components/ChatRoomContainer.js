@@ -10,6 +10,7 @@ import {
   Text,
   TouchableWithoutFeedback,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import {useSelector} from 'react-redux';
 import ChatInput from './ChatInput';
@@ -134,46 +135,55 @@ const ChatRoomContainer = props => {
     fetchData(pageRef.current.page);
   }, [fetchData]);
   const handleSendMsg = async (msg, images) => {
-    inputRef.current.setLoading(true);
-    var imagesUpload = [];
-    if (images?.length > 0) {
-      var formdata = new FormData();
-      images.map((image, index) => {
-        formdata.append('images', {
-          uri: image.uri,
-          type: image.type,
-          name: image.fileName,
+    try {
+      inputRef.current.setLoading(true);
+      var imagesUpload = [];
+      if (images?.length > 0) {
+        var formdata = new FormData();
+        images.map((image, index) => {
+          formdata.append('images', {
+            uri:
+              Platform.OS === 'ios'
+                ? image.path.replace('file://', '')
+                : image.path,
+            type: 'image/jpeg',
+            name: image.path.split('/').pop(),
+          });
         });
+        imagesUpload = await axios({
+          method: 'post',
+          url: uploadMultipeImageRoute,
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'multipart/form-data',
+          },
+          data: formdata,
+        });
+      }
+      const msgImage = imagesUpload.data?.map((image, index) => image.id);
+      const userData = user;
+      delete userData.password;
+      delete userData.isAvatarImageSet;
+      delete userData.email;
+      const res = await axios.post(addRoomMessageRoute, {
+        from: userData,
+        to: roomName,
+        message: msg,
+        images: msgImage || [],
       });
-      imagesUpload = await axios({
-        method: 'post',
-        url: uploadMultipeImageRoute,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-        data: formdata,
+      socket.current.emit('send-message-room', {
+        to: roomName,
+        from: user,
+        msg,
+        images: msgImage || [],
+        id: res?.data._id,
       });
+      pageRef.current.numberOfNewMessager++;
+      inputRef.current.setLoading(false);
+    } catch (error) {
+      inputRef.current.setLoading(false);
+      console.log(error);
     }
-    const msgImage = imagesUpload.data?.map((image, index) => image.id);
-    const userData = user;
-    delete userData.password;
-    delete userData.isAvatarImageSet;
-    delete userData.email;
-    const res = await axios.post(addRoomMessageRoute, {
-      from: userData,
-      to: roomName,
-      message: msg,
-      images: msgImage || [],
-    });
-    socket.current.emit('send-message-room', {
-      to: roomName,
-      from: user,
-      msg,
-      images: msgImage || [],
-      id: res?.data._id,
-    });
-    pageRef.current.numberOfNewMessager++;
-    inputRef.current.setLoading(false);
   };
   const handleDeleteMsg = async id => {
     try {
