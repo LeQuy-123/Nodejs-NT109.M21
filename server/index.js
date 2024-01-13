@@ -36,7 +36,7 @@ const server = app.listen(process.env.PORT, () =>
 );
 const io = socket(server, {
   cors: {
-    origin: "https://quy-chat-app-2022.herokuapp.com",
+    origin: "http://localhost:3000/",
     methods: ["GET", "POST"],
     credentials: true
   },

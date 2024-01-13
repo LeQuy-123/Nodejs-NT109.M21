@@ -16,7 +16,10 @@ export default function Chat() {
   const [currentUser, setCurrentUser] = useState(undefined);
   const [isDoneLoadingSocket, setDoneLoadingSocket] = useState(false);
 
-  useEffect(async () => {
+  useEffect(() => {
+    fetchData();
+  }, []);
+  const fetchData = async () => {
     if (!localStorage.getItem(process.env.REACT_APP_LOCALHOST_KEY)) {
       navigate("/login");
     } else {
@@ -26,7 +29,7 @@ export default function Chat() {
         )
       );
     }
-  }, []);
+  }
   useEffect(() => {
     if (currentUser) {
       setDoneLoadingSocket(false);
